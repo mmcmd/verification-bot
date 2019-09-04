@@ -11,7 +11,6 @@ client = discord.Client()
 
 # To do:
 # Auto-verify people over certain account age maybe?
-# Variable having underscores
 # Splitting commands into different functions
 # Perhaps put bot config into a different file
 
@@ -101,4 +100,4 @@ async def on_message(message):
 
 
 
-client.run('NTk2NDA5ODc0OTIyMDc4MjEx.XR5bzw.mZI09MUyBogJq5lKWToQNea8o-o')
+client.run('TOKEN')
