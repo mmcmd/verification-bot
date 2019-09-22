@@ -16,15 +16,14 @@ with open("config.json", "r") as read: # Imports config json file
 ## To do: ##
 
 # High priority
-# JSON bot config file https://stackoverflow.com/questions/19078170/python-how-would-you-save-a-simple-settings-config-file
 # Splitting commands into different functions
 # Error handling
 
 # Medium priority
-# Logging
 # Command to display last 30 logs
 
 # Low priority
+# Advanced logging
 # Message when a nitro boost occurs (on_member_update) -> when Nitro booster role is added to someone
 # Remove color roles from people who unboost
 
