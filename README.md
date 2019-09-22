@@ -7,3 +7,8 @@ Auto-verifies users who have a 3+ month old account
 Users with a <3 month old account can send it the message "verify" and it will verify them.
 
 Informs users with a <5 days old account to message Moderator Mail to get verified.
+
+
+### Potential future features
+
+See Projects tab for more info
