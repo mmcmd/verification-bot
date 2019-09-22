@@ -9,6 +9,8 @@ import json
 
 client = discord.Client()
 logging.basicConfig(filename='verification.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s',level=logging.INFO)
+with open("config.json", "r") as read: # Imports config json file
+    config_json = json.load(read_file)
 
 
 ## To do: ##
@@ -19,8 +21,8 @@ logging.basicConfig(filename='verification.log', filemode='w', format='%(name)s 
 # Error handling
 
 # Medium priority
-# Auto-verify people over certain account age maybe?
 # Logging
+# Command to display last 30 logs
 
 # Low priority
 # Message when a nitro boost occurs (on_member_update) -> when Nitro booster role is added to someone
@@ -32,8 +34,12 @@ logging.basicConfig(filename='verification.log', filemode='w', format='%(name)s 
 
 # Static variables 
 
-homeserver_id = 362843193617678337 # Guild ID
-moderator_mail = 562349906648629259 # Moderator Mail ID (for mentionning it in a message)
+token = config_json["token"]
+homeserver_id = config_json["homeserver_id"]
+moderator_mail = config_json["moderator_mail"]
+status = config_json["status"]
+log_channel_id = config_json["log_channel_id"]
+verified_role = config_json["verified_role"]
 colors = [discord.Colour.purple(), discord.Colour.blue(), discord.Colour.red(), discord.Colour.green(), discord.Colour.orange()]
 
 
@@ -45,7 +51,7 @@ async def on_ready():
     print('Logged in as {0.user}'.format(client))
     logging.info('Logged in as {0.user}'.format(client))
 
-    await client.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name="message me to get verified!"))
+    await client.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name=status))
 
 
 
@@ -73,10 +79,10 @@ async def on_message(message):
             account_age = datetime.datetime.utcnow() - message.author.created_at # Subtracts current time with account creation date to get account age
             account_age_days = account_age.days # Account age in days
             home_server = client.get_guild(homeserver_id) # Gets the guild
-            log_channel = client.get_channel(372072613461098517) # #logs channel
+            log_channel = client.get_channel(log_channel_id) # #logs channel
             home_server_info = home_server.get_member(author_id) # Fetches user info from said guild
             home_server_top_role = str(home_server_info.top_role.name) # Fetches top role from user info
-            home_server_verified_role = home_server.get_role(568189133617364998) # The ID of the role that the bot gives in order for the person to be able to use the server 
+            home_server_verified_role = home_server.get_role(verified_role) # The ID of the role that the bot gives in order for the person to be able to use the server 
             if home_server_top_role == "@everyone":
                 if account_age_days < 5:
                     await message.channel.send("Sorry, your account must be 5 days or older in order to get verified. Please either verify with your phone number or contact the mod team through <@%s> (Moderator mail, top of the member list) for manual verification if you're unable to verify with a phone number."% str(moderator_mail))
@@ -119,9 +125,9 @@ async def on_member_join(member):
     account_age = datetime.datetime.utcnow() - member.created_at # Subtracts current time with account creation date to get account age
     account_age_days = account_age.days # Account age in days
     home_server = client.get_guild(homeserver_id) # Gets the guild
-    log_channel = client.get_channel(372072613461098517) # #logs channel
+    log_channel = client.get_channel(log_channel_id) # #logs channel
     home_server_info = home_server.get_member(member_id) # Fetches user info from said guild
-    home_server_verified_role = home_server.get_role(568189133617364998) # The ID of the role that the bot gives in order for the person to be able to use the server 
+    home_server_verified_role = home_server.get_role(verified_role) # The ID of the role that the bot gives in order for the person to be able to use the server 
     if account_age_days > 180:
         await home_server_info.add_roles(home_server_verified_role, reason="Account age is over 3 months (%d days), user has automatically been verified."% account_age_days) # Adds unverified role to the user
         log_embed = discord.Embed(description='<@%d> has been verified automatically because his account age is over 3 months (%d days)'% (member_id,account_age_days),timestamp=datetime.datetime.utcnow(),color=random.choice(colors))

@@ -3,5 +3,6 @@
     "homeserver_id": "id of the modmail inbox server",
     "moderator_mail_id": "ID of the bot which handles mod mails in your server",
     "log_channel_id": "ID of the logs channel in your server",
-    "status": "message me to get verified!"
+    "status": "message me to get verified!",
+    "verified_role": "ID of the role that allows people to talk"
 }
