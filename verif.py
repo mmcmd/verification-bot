@@ -28,7 +28,7 @@ with open("config.json", "r") as read: # Imports config json file
 # Remove color roles from people who unboost
 
 
-
+# make function and pass parameters
 
 
 # Static variables 
@@ -39,12 +39,11 @@ moderator_mail = config_json["moderator_mail"]
 status = config_json["status"]
 log_channel_id = config_json["log_channel_id"]
 verified_role = config_json["verified_role"]
+colored_roles = config_json["colored_roles"]
 colors = [discord.Colour.purple(), discord.Colour.blue(), discord.Colour.red(), discord.Colour.green(), discord.Colour.orange()]
 
 
-
-# Bot stuff 
-
+# Logging in to the bot
 @client.event
 async def on_ready():
     print('Logged in as {0.user}'.format(client))
@@ -53,7 +52,7 @@ async def on_ready():
     await client.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name=status))
 
 
-
+# Verification functions
 @client.event
 async def on_message(message):
 
@@ -72,7 +71,7 @@ async def on_message(message):
 
 
     if message.guild is None:
-        logging.info("Direct message received: %s - sent by %s (%d)"% (message.content.lower(),message.author.name, message.author.id))
+        logging.info("Direct message received: %s - sent by %s (ID: %d)"% (message.content.lower(),message.author.name, message.author.id))
         if "verify" in message.content.lower() or "verified" in message.content.lower():
             author_id = int(message.author.id) # Author's ID
             account_age = datetime.datetime.utcnow() - message.author.created_at # Subtracts current time with account creation date to get account age
@@ -85,14 +84,14 @@ async def on_message(message):
             if home_server_top_role == "@everyone":
                 if account_age_days < 5:
                     await message.channel.send("Sorry, your account must be 5 days or older in order to get verified. Please either verify with your phone number or contact the mod team through <@%s> (Moderator mail, top of the member list) for manual verification if you're unable to verify with a phone number."% str(moderator_mail))
-                    logembedfail = discord.Embed(description='<@%d> (%s) attempted to get verified, however his account age is too low (%d days)'% (int(author_id), str(author_id), account_age_days),timestamp=datetime.datetime.utcnow(),color=random.choice(colors))
+                    logembedfail = discord.Embed(description='<@%d> (%s) attempted to get manually verified, however his account age is too low (%d days)'% (int(author_id), str(author_id), account_age_days),timestamp=datetime.datetime.utcnow(),color=discord.Colour.red())
                     logembedfail.set_author(name=message.author.name, icon_url=message.author.avatar_url)
-                    logging.info(message.author.name + "(%d) attempted to get verified, but his account age was too low (%d days)"% (author_id, account_age_days))
+                    logging.info(message.author.name + "(%d) attempted to get manually verified, but his account age was too low (%d days)"% (author_id, account_age_days))
                     await log_channel.send(embed=logembedfail)
                     return
                 elif account_age_days >= 5:
-                    await home_server_info.add_roles(home_server_verified_role, reason="User has verified with Verification bot. Account age: %d" % account_age_days) # Adds unverified role to the user
-                    log_embed = discord.Embed(description='<@%d> has been verified'% author_id,timestamp=datetime.datetime.utcnow(),color=random.choice(colors))
+                    await home_server_info.add_roles(home_server_verified_role, reason="User has manually been verified with Verification bot. Account age: %d days" % account_age_days) # Adds unverified role to the user
+                    log_embed = discord.Embed(description="<@%d> has been verified"% author_id,timestamp=datetime.datetime.utcnow(),color=discord.Colour.green())
                     log_embed.set_author(name=message.author.name, icon_url=message.author.avatar_url)
                     await log_channel.send(embed=log_embed)
                     await message.channel.send("You have been verified. Please remember to read the <#%s>. You may also assign yourself roles in <#%s>. If you ever have an issue, do not hesitate to message <@%s> (Moderator Mail, top of the member list)"% (str(448941767325253632),str(516816975427797012),str(moderator_mail)))
@@ -129,14 +128,33 @@ async def on_member_join(member):
     home_server_verified_role = home_server.get_role(verified_role) # The ID of the role that the bot gives in order for the person to be able to use the server 
     if account_age_days > 180:
         await home_server_info.add_roles(home_server_verified_role, reason="Account age is over 3 months (%d days), user has automatically been verified."% account_age_days) # Adds unverified role to the user
-        log_embed = discord.Embed(description='<@%d> has been verified automatically because his account age is over 3 months (%d days)'% (member_id,account_age_days),timestamp=datetime.datetime.utcnow(),color=random.choice(colors))
+        log_embed = discord.Embed(description="<@%d> has been verified automatically because his account age is over 3 months (%d days)"% (member_id,account_age_days),timestamp=datetime.datetime.utcnow(),color=discord.Colour.green())
         log_embed.set_author(name=member.id, icon_url=member.avatar_url)
         await log_channel.send(embed=log_embed)
-        logging.info('%s (%d) has been verified automatically because his account age is over 3 months (%d days)'% (str(member.author.name),member_id,account_age_days))
+        logging.info("%s (%d) has been verified automatically because his account age is over 3 months (%d days)"% (str(member.author.name),member_id,account_age_days))
         return
     else:
         return
 
+
+# Event to remove colored roles when a member unboosts
+@client.event
+async def on_member_update(member,updatedmember):
+    check_boost = member.premium_since
+    check_if_unboost = updatedmember.premium_since
+    if check_boost is not None:
+        if check_if_unboost is None:
+            home_server = client.get_guild(homeserver_id) # Gets the guild
+            log_channel = client.get_channel(log_channel_id) # #logs channel
+            home_server_info = home_server.get_member(member_id) # Fetches user info from said guild
+            for role in colored_roles:
+
+            await home_server_info.remove_role(role, reason="User unboosted the server, colors have been removed")
+
+
+
+
+    
 
 
 
