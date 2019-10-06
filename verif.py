@@ -4,11 +4,11 @@ import time
 import random
 import asyncio
 import datetime
-import discord.ext.commands
+from discord.ext import commands
 import json
 
 client = discord.Client()
-logging.basicConfig(filename='verification.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s',level=logging.INFO)
+logging.basicConfig(filename='verification.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s',level=logging.INFO) # Logs to verification.log file
 with open("config.json", "r") as read: # Imports config json file
     config_json = json.load(read_file)
 
@@ -26,9 +26,8 @@ with open("config.json", "r") as read: # Imports config json file
 # Advanced logging
 # Message when a nitro boost occurs (on_member_update) -> when Nitro booster role is added to someone
 # Remove color roles from people who unboost
+# Make getting user info into a function
 
-
-# make function and pass parameters
 
 
 # Static variables 
@@ -40,7 +39,7 @@ status = config_json["status"]
 log_channel_id = config_json["log_channel_id"]
 verified_role = config_json["verified_role"]
 colored_roles = config_json["colored_roles"]
-colors = [discord.Colour.purple(), discord.Colour.blue(), discord.Colour.red(), discord.Colour.green(), discord.Colour.orange()]
+colors = [discord.Colour.purple(), discord.Colour.blue(), discord.Colour.red(), discord.Colour.green(), discord.Colour.orange()] # Discord colors for embedding
 
 
 # Logging in to the bot
@@ -58,17 +57,6 @@ async def on_message(message):
 
     if message.author == client.user: # Ignores the bots own messages
         return
-
-    '''
-    if message.content.lower().startswith('$ping'):
-        pingem = discord.Embed(color=random.choice(colors))
-        pingem.add_field(name=':ping_pong: Ping', value=':ping_pong: Pong')
-        pingem.add_field(name=':newspaper: Response time', value=f'{client.latency * 1000:.0f} ms')
-        await message.channel.send(embed=pingem)
-    '''
-
-
-
 
     if message.guild is None:
         logging.info("Direct message received: %s - sent by %s (ID: %d)"% (message.content.lower(),message.author.name, message.author.id))
@@ -104,15 +92,6 @@ async def on_message(message):
                 return
 
 
-    '''
-    if message.content.lower().startswith("$steve"):
-        stevelist = ['<:steve1:418736567373266955>','<:steve2:418736568145149952>', '<:steve3:418736567922851851>', '<:steve4:418736568040292352>','<:steve5:418736568057069569>']
-        steves = stevelist[0] + '\n' + stevelist[1] + '\n' + stevelist[2] + '\n' + stevelist[3] + '\n' + stevelist[4]
-        steve = discord.Embed(color=random.choice(colors), description=steves)
-        await message.channel.send(embed=steve)
-    '''
-
-        #discord.ext.commands.cooldown(60,BucketType.default) # Command cooldown https://discordpy.readthedocs.io/en/latest/ext/commands/api.html
 
 
 
@@ -137,29 +116,43 @@ async def on_member_join(member):
         return
 
 
+
 # Event to remove colored roles when a member unboosts
 @client.event
 async def on_member_update(member,updatedmember):
     check_boost = member.premium_since
     check_if_unboost = updatedmember.premium_since
+    member_id = member.id # Members ID
     if check_boost is not None:
         if check_if_unboost is None:
-            home_server = client.get_guild(homeserver_id) # Gets the guild
+            logging.info("%s (%d) unboosted the server." % (str(member.name),member_id))
             log_channel = client.get_channel(log_channel_id) # #logs channel
-            home_server_info = home_server.get_member(member_id) # Fetches user info from said guild
+            log_embed_unboost = discord.Embed(description="%s (%d) unboosted the server."% (str(member.name),member_id),timestamp=datetime.datetime.utcnow(),color=discord.Colour.red())
+            log_embed_unboost.set_author(name=member.id, icon_url=member.avatar_url)
+            await log_channel.send(embed=log_embed_unboost)
             for role in colored_roles:
-
-            await home_server_info.remove_role(role, reason="User unboosted the server, colors have been removed")
-
+                await updatedmember.remove_roles(role, reason="User unboosted the server, colors have been removed")
 
 
 
-    
+bot = commands.Bot(command_prefix='//')
+
+@bot.command(name='steve')
+@commands.cooldown(1,20,type=BucketType.default)
+async def steve(message):
+    stevelist = ['<:steve1:418736567373266955>','<:steve2:418736568145149952>', '<:steve3:418736567922851851>', '<:steve4:418736568040292352>','<:steve5:418736568057069569>']
+    steves = stevelist[0] + '\n' + stevelist[1] + '\n' + stevelist[2] + '\n' + stevelist[3] + '\n' + stevelist[4]
+    steve = discord.Embed(color=random.choice(colors), description=steves)
+    await message.send(embed=steve)
 
 
 
-
-
+@bot.command(name='ping')
+async def ping(message):
+    pingem = discord.Embed(color=random.choice(colors))
+    pingem.add_field(name=':ping_pong: Ping', value=':ping_pong: Pong')
+    pingem.add_field(name=':newspaper: Response time', value=f'{client.latency * 1000:.0f} ms')
+    await message.send(embed=pingem)
 
 
 
