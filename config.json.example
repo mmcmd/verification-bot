@@ -6,5 +6,6 @@
     "status": "message me to get verified!",
     "colored_roles": [ "452201509816369162", "623681022717984779", "588461409034305576", "588422685390929967", "623681271918493706", "622191183757574144", "467409730927722497", "623681528949374997" ],
     "prefix": "Enter your prefix here",
+    "unboost_announcement_channel_id": "Channel ID where unboosters are announced (this can be your logs channel)",
     "verified_role": "ID of the role that the bot gives upon verification"
 }
