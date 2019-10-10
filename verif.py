@@ -46,7 +46,11 @@ unboost_channel_ID = int(unboost_channel_ID) # Convert to integer
 status = config_json["status"]
 colored_roles = config_json["colored_roles"]
 prefix = config_json["prefix"]
+
 verified_role = config_json["verified_role"]
+verified_role = int(verified_role)
+
+
 colors = [discord.Colour.purple(), discord.Colour.blue(), discord.Colour.red(), discord.Colour.green(), discord.Colour.orange()] # Discord colors for embedding
 
 
