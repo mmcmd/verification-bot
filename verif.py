@@ -7,10 +7,9 @@ import datetime
 from discord.ext import commands
 import json
 
-client = discord.Client()
-logging.basicConfig(filename='verification.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s',level=logging.INFO) # Logs to verification.log file
+logging.basicConfig(filename='verification.log', filemode='w', format='%(asctime)s - %(levelname)s - %(message)s',level=logging.DEBUG,datefmt='%Y-%m-%d %H:%M:%S') # Logs to verification.log file
 with open("config.json", "r") as read: # Imports config json file
-    config_json = json.load(read_file)
+    config_json = json.load(read)
 
 
 ## To do: ##
@@ -31,18 +30,29 @@ with open("config.json", "r") as read: # Imports config json file
 
 
 # Static variables 
-
 token = config_json["token"]
-homeserver_id = config_json["homeserver_id"]
-moderator_mail = config_json["moderator_mail"]
+home_server_ID = config_json["homeserver_id"]
+home_server_ID = int(home_server_ID) # Convert to integer
+
+moderator_mail = config_json["moderator_mail_id"]
+moderator_mail = int(moderator_mail) # Convert to integer
+
+log_channel_ID = config_json["log_channel_id"]
+log_channel_ID = int(log_channel_ID) # Convert to integer
+
 status = config_json["status"]
-log_channel_id = config_json["log_channel_id"]
-verified_role = config_json["verified_role"]
 colored_roles = config_json["colored_roles"]
+prefix = config_json["prefix"]
+verified_role = config_json["verified_role"]
 colors = [discord.Colour.purple(), discord.Colour.blue(), discord.Colour.red(), discord.Colour.green(), discord.Colour.orange()] # Discord colors for embedding
 
 
+
 # Logging in to the bot
+
+client = commands.Bot(command_prefix=prefix)
+
+
 @client.event
 async def on_ready():
     print('Logged in as {0.user}'.format(client))
@@ -64,8 +74,8 @@ async def on_message(message):
             author_id = int(message.author.id) # Author's ID
             account_age = datetime.datetime.utcnow() - message.author.created_at # Subtracts current time with account creation date to get account age
             account_age_days = account_age.days # Account age in days
-            home_server = client.get_guild(homeserver_id) # Gets the guild
-            log_channel = client.get_channel(log_channel_id) # #logs channel
+            home_server = client.get_guild(home_server_ID) # Gets the guild
+            log_channel = client.get_channel(log_channel_ID) # #logs channel
             home_server_info = home_server.get_member(author_id) # Fetches user info from said guild
             home_server_top_role = str(home_server_info.top_role.name) # Fetches top role from user info
             home_server_verified_role = home_server.get_role(verified_role) # The ID of the role that the bot gives in order for the person to be able to use the server 
@@ -90,6 +100,7 @@ async def on_message(message):
                 await message.channel.send("You're already able to speak in the server, there is no need for you to get verified. Contact <@%s> (Moderator Mail, top of the member list) if there is an issue."% str(moderator_mail))
                 logging.info(message.author.name + " (%d) attempted to get verified, but doesn't have @ everyone as his top role. Verification aborted."% author_id)
                 return
+    await client.process_commands(message)
 
 
 
@@ -101,8 +112,8 @@ async def on_member_join(member):
     member_id = int(member.id)
     account_age = datetime.datetime.utcnow() - member.created_at # Subtracts current time with account creation date to get account age
     account_age_days = account_age.days # Account age in days
-    home_server = client.get_guild(homeserver_id) # Gets the guild
-    log_channel = client.get_channel(log_channel_id) # #logs channel
+    home_server = client.get_guild(home_server_ID) # Gets the guild
+    log_channel = client.get_channel(log_channel_ID) # #logs channel
     home_server_info = home_server.get_member(member_id) # Fetches user info from said guild
     home_server_verified_role = home_server.get_role(verified_role) # The ID of the role that the bot gives in order for the person to be able to use the server 
     if account_age_days > 180:
@@ -110,7 +121,7 @@ async def on_member_join(member):
         log_embed = discord.Embed(description="<@%d> has been verified automatically because his account age is over 3 months (%d days)"% (member_id,account_age_days),timestamp=datetime.datetime.utcnow(),color=discord.Colour.green())
         log_embed.set_author(name=member.id, icon_url=member.avatar_url)
         await log_channel.send(embed=log_embed)
-        logging.info("%s (%d) has been verified automatically because his account age is over 3 months (%d days)"% (str(member.author.name),member_id,account_age_days))
+        logging.info("%s (%d) has been verified automatically because his account age is over 3 months (%d days)"% (str(member.name),member_id,account_age_days))
         return
     else:
         return
@@ -126,7 +137,7 @@ async def on_member_update(member,updatedmember):
     if check_boost is not None:
         if check_if_unboost is None:
             logging.info("%s (%d) unboosted the server." % (str(member.name),member_id))
-            log_channel = client.get_channel(log_channel_id) # #logs channel
+            log_channel = client.get_channel(log_channel_ID) # #logs channel
             log_embed_unboost = discord.Embed(description="%s (%d) unboosted the server."% (str(member.name),member_id),timestamp=datetime.datetime.utcnow(),color=discord.Colour.red())
             log_embed_unboost.set_author(name=member.id, icon_url=member.avatar_url)
             await log_channel.send(embed=log_embed_unboost)
@@ -135,24 +146,26 @@ async def on_member_update(member,updatedmember):
 
 
 
-bot = commands.Bot(command_prefix='//')
 
-@bot.command(name='steve')
-@commands.cooldown(1,20,type=BucketType.default)
-async def steve(message):
+# Command to display Steve Harvey. Bot needs to be part of the server where these emotes are, and the IDs need to be replaced.
+@client.command(name='steve')
+@commands.cooldown(1,20,commands.BucketType.channel)
+async def steve(ctx):
     stevelist = ['<:steve1:418736567373266955>','<:steve2:418736568145149952>', '<:steve3:418736567922851851>', '<:steve4:418736568040292352>','<:steve5:418736568057069569>']
     steves = stevelist[0] + '\n' + stevelist[1] + '\n' + stevelist[2] + '\n' + stevelist[3] + '\n' + stevelist[4]
     steve = discord.Embed(color=random.choice(colors), description=steves)
-    await message.send(embed=steve)
+    await ctx.send(embed=steve)
 
 
 
-@bot.command(name='ping')
-async def ping(message):
+@client.command(name='ping')
+@commands.cooldown(1,10,commands.BucketType.channel)
+async def ping(ctx):
     pingem = discord.Embed(color=random.choice(colors))
     pingem.add_field(name=':ping_pong: Ping', value=':ping_pong: Pong')
     pingem.add_field(name=':newspaper: Response time', value=f'{client.latency * 1000:.0f} ms')
-    await message.send(embed=pingem)
+    await ctx.send(embed=pingem)
+
 
 
 
