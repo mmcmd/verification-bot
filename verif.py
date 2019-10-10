@@ -7,7 +7,7 @@ import datetime
 from discord.ext import commands
 import json
 
-logging.basicConfig(filename='verification.log', filemode='w', format='%(asctime)s - %(levelname)s - %(message)s',level=logging.DEBUG,datefmt='%Y-%m-%d %H:%M:%S') # Logs to verification.log file
+logging.basicConfig(filename='verification.log', filemode='w', format='%(asctime)s - %(levelname)s - %(message)s',level=logging.INFO,datefmt='%Y-%m-%d %H:%M:%S') # Logs to verification.log file
 with open("config.json", "r") as read: # Imports config json file
     config_json = json.load(read)
 
@@ -40,6 +40,9 @@ moderator_mail = int(moderator_mail) # Convert to integer
 log_channel_ID = config_json["log_channel_id"]
 log_channel_ID = int(log_channel_ID) # Convert to integer
 
+unboost_channel_ID = config_json["unboost_announcement_channel_id"]
+unboost_channel_ID = int(unboost_channel_ID) # Convert to integer
+
 status = config_json["status"]
 colored_roles = config_json["colored_roles"]
 prefix = config_json["prefix"]
@@ -59,6 +62,8 @@ async def on_ready():
     logging.info('Logged in as {0.user}'.format(client))
 
     await client.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name=status))
+
+
 
 
 # Verification functions
@@ -106,7 +111,7 @@ async def on_message(message):
 
 
 
-# Event to automatically verify people with account ages over 6 months old
+# Event to automatically verify people with account ages over 3 months old
 @client.event
 async def on_member_join(member):
     member_id = int(member.id)
@@ -137,11 +142,13 @@ async def on_member_update(member,updatedmember):
     if check_boost is not None:
         if check_if_unboost is None:
             logging.info("%s (%d) unboosted the server." % (str(member.name),member_id))
-            log_channel = client.get_channel(log_channel_ID) # #logs channel
-            log_embed_unboost = discord.Embed(description="%s (%d) unboosted the server."% (str(member.name),member_id),timestamp=datetime.datetime.utcnow(),color=discord.Colour.red())
+            home_server = client.get_guild(home_server_ID)
+            log_channel_unboost = client.get_channel(unboost_channel_ID) # #logs channel
+            log_embed_unboost = discord.Embed(description="<@%d> (%d) unboosted the server."% (member_id),timestamp=datetime.datetime.utcnow(),color=discord.Colour.red())
             log_embed_unboost.set_author(name=member.id, icon_url=member.avatar_url)
-            await log_channel.send(embed=log_embed_unboost)
+            await log_channel_unboost.send(embed=log_embed_unboost)
             for role in colored_roles:
+                role = home_server.get_role(role)
                 await updatedmember.remove_roles(role, reason="User unboosted the server, colors have been removed")
 
 
@@ -149,7 +156,7 @@ async def on_member_update(member,updatedmember):
 
 # Command to display Steve Harvey. Bot needs to be part of the server where these emotes are, and the IDs need to be replaced.
 @client.command(name='steve')
-@commands.cooldown(1,20,commands.BucketType.channel)
+@commands.cooldown(1,10,commands.BucketType.member)
 async def steve(ctx):
     stevelist = ['<:steve1:418736567373266955>','<:steve2:418736568145149952>', '<:steve3:418736567922851851>', '<:steve4:418736568040292352>','<:steve5:418736568057069569>']
     steves = stevelist[0] + '\n' + stevelist[1] + '\n' + stevelist[2] + '\n' + stevelist[3] + '\n' + stevelist[4]
@@ -159,7 +166,7 @@ async def steve(ctx):
 
 
 @client.command(name='ping')
-@commands.cooldown(1,10,commands.BucketType.channel)
+@commands.cooldown(1,10,commands.BucketType.member)
 async def ping(ctx):
     pingem = discord.Embed(color=random.choice(colors))
     pingem.add_field(name=':ping_pong: Ping', value=':ping_pong: Pong')
