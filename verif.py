@@ -16,7 +16,9 @@ with open("config.json", "r") as read: # Imports config json file
 token = config_json["token"]
 home_server_ID = int(config_json["homeserver_id"])
 
-verification_requirement = int(config_json["homeserver_id"])
+verification_requirement_join = int(config_json["verification_requirement_join"])
+
+verification_requirement_message = int(config_json["verification_requirement_message"])
 
 moderator_mail = int(config_json["moderator_mail_id"])
 
@@ -75,14 +77,14 @@ async def on_message(message):
             home_server_top_role = str(home_server_info.top_role.name) # Fetches top role from user info
             home_server_verified_role = home_server.get_role(verified_role) # The ID of the role that the bot gives in order for the person to be able to use the server 
             if home_server_top_role == "@everyone":
-                if account_age_days < 5:
+                if account_age_days < verification_requirement_message:
                     await message.channel.send("Sorry, your account must be 5 days or older in order to get verified. Please either verify with your phone number or contact the mod team through <@%s> (Moderator mail, top of the member list) for manual verification if you're unable to verify with a phone number."% str(moderator_mail))
                     logembedfail = discord.Embed(description='<@%d> (%s) attempted to get manually verified, however his account age is too low (%d days)'% (int(author_id), str(author_id), account_age_days),timestamp=datetime.datetime.utcnow(),color=discord.Colour.red())
                     logembedfail.set_author(name=message.author.name, icon_url=message.author.avatar_url)
                     logging.info(message.author.name + "(%d) attempted to get manually verified, but his account age was too low (%d days)"% (author_id, account_age_days))
                     await log_channel.send(embed=logembedfail)
                     return
-                elif account_age_days >= 5:
+                elif account_age_days >= verification_requirement_message:
                     await home_server_info.add_roles(home_server_verified_role, reason="User has manually been verified with Verification bot. Account age: %d days" % account_age_days) # Adds unverified role to the user
                     log_embed = discord.Embed(description="<@%d> has been verified"% author_id,timestamp=datetime.datetime.utcnow(),color=discord.Colour.green())
                     log_embed.set_author(name=message.author.name, icon_url=message.author.avatar_url)
@@ -111,7 +113,7 @@ async def on_member_join(member):
     log_channel = client.get_channel(log_channel_ID) # #logs channel
     home_server_info = home_server.get_member(member_id) # Fetches user info from said guild
     home_server_verified_role = home_server.get_role(verified_role) # The ID of the role that the bot gives in order for the person to be able to use the server 
-    if account_age_days > 180:
+    if account_age_days > verification_requirement_join:
         await home_server_info.add_roles(home_server_verified_role, reason="Account age is over 3 months (%d days), user has automatically been verified."% account_age_days) # Adds unverified role to the user
         log_embed = discord.Embed(description="<@%d> has been verified automatically because his account age is over 3 months (%d days)"% (member_id,account_age_days),timestamp=datetime.datetime.utcnow(),color=discord.Colour.green())
         log_embed.set_author(name=member.id, icon_url=member.avatar_url)
