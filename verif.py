@@ -12,47 +12,33 @@ with open("config.json", "r") as read: # Imports config json file
     config_json = json.load(read)
 
 
-## To do: ##
-
-# High priority
-# Splitting commands into different functions
-# Error handling
-
-# Medium priority
-# Command to display last 30 logs
-
-# Low priority
-# Advanced logging
-# Message when a nitro boost occurs (on_member_update) -> when Nitro booster role is added to someone
-# Remove color roles from people who unboost
-# Make getting user info into a function
-
-
-
 # Static variables 
 token = config_json["token"]
-home_server_ID = config_json["homeserver_id"]
-home_server_ID = int(home_server_ID) # Convert to integer
+home_server_ID = int(config_json["homeserver_id"])
 
-moderator_mail = config_json["moderator_mail_id"]
-moderator_mail = int(moderator_mail) # Convert to integer
+verification_requirement = int(config_json["homeserver_id"])
 
-log_channel_ID = config_json["log_channel_id"]
-log_channel_ID = int(log_channel_ID) # Convert to integer
+moderator_mail = int(config_json["moderator_mail_id"])
 
-unboost_channel_ID = config_json["unboost_announcement_channel_id"]
-unboost_channel_ID = int(unboost_channel_ID) # Convert to integer
+log_channel_ID = int(config_json["log_channel_id"])
+
+unboost_channel_ID = int(config_json["unboost_announcement_channel_id"])
 
 status = config_json["status"]
+
 colored_roles = config_json["colored_roles"]
+
 prefix = config_json["prefix"]
 
-verified_role = config_json["verified_role"]
-verified_role = int(verified_role)
+moderator_role_IDs = config_json["moderator_role_IDs"]
+moderator_role_IDs = [int(i) for i in moderator_role_IDs] # Making sure they are ints
 
+
+verified_role = int(config_json["verified_role"])
+
+birthday_role_id = int(config_json["birthday_role_ID"])
 
 colors = [discord.Colour.purple(), discord.Colour.blue(), discord.Colour.red(), discord.Colour.green(), discord.Colour.orange()] # Discord colors for embedding
-
 
 
 # Logging in to the bot
@@ -158,7 +144,7 @@ async def on_member_update(member,updatedmember):
 
 
 
-# Command to display Steve Harvey. Bot needs to be part of the server where these emotes are, and the IDs need to be replaced.
+# Bot commands
 @client.command(name='steve')
 @commands.cooldown(1,10,commands.BucketType.member)
 async def steve(ctx):
@@ -178,7 +164,16 @@ async def ping(ctx):
     await ctx.send(embed=pingem)
 
 
-
+@client.command(name='birthday')
+@commands.has_any_role(*moderator_role_IDs)
+async def birthday(ctx, birthdayboy: discord.Member):
+    home_server_info = client.get_guild(home_server_ID)
+    birthday_role = home_server_info.get_role(birthday_role_id)
+    await birthdayboy.add_roles(birthday_role,reason="Responsible user: %s" % ctx.author.name)
+    await ctx.send("Gave the birthday boy role to <@%d>. Automatically removing it in 12 hours." % birthdayboy.id)
+    await asyncio.sleep(43200)
+    await birthdayboy.remove_roles(birthday_role,reason="Responsible user: %s" % ctx.author.name)
+    await ctx.send("Removed the birthday boy role from <@%d>. <@%d>" % (birthdayboy.id, ctx.author.id))
 
 
 client.run(token)
