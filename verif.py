@@ -171,11 +171,16 @@ async def ping(ctx):
 async def birthday(ctx, birthdayboy: discord.Member):
     home_server_info = client.get_guild(home_server_ID)
     birthday_role = home_server_info.get_role(birthday_role_id)
-    await birthdayboy.add_roles(birthday_role,reason="Responsible user: %s" % ctx.author.name)
-    await ctx.send("Gave the birthday boy role to <@%d>. Automatically removing it in 12 hours." % birthdayboy.id)
-    await asyncio.sleep(43200)
-    await birthdayboy.remove_roles(birthday_role,reason="Responsible user: %s" % ctx.author.name)
-    await ctx.send("Removed the birthday boy role from <@%d>. <@%d>" % (birthdayboy.id, ctx.author.id))
+    if birthday_role in birthdayboy.roles:
+        await birthdayboy.remove_roles(birthday_role,reason="Responsible user: %s" % ctx.author.name)
+        await ctx.send("<@%d> removed the Birthday Boy role from <@%d>" % (ctx.author.id,birthdayboy.id))
+    else:
+        await birthdayboy.add_roles(birthday_role,reason="Responsible user: %s" % ctx.author.name)
+        await ctx.send("Gave the birthday boy role to <@%d>. Automatically removing it in 12 hours." % birthdayboy.id)
+        await asyncio.sleep(43200)
+        if birthday_role in birthdayboy.roles:
+            await birthdayboy.remove_roles(birthday_role,reason="Responsible user: %s" % ctx.author.name)
+            await ctx.send("Removed the birthday boy role from <@%d>. <@%d>" % (birthdayboy.id, ctx.author.id))
 
 
 client.run(token)
