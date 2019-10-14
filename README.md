@@ -12,3 +12,7 @@ Informs users below the specified minimum account age to message Moderator Mail 
 ### Potential future features
 
 See Projects tab for more info
+
+### Installation
+
+See Wiki tab
