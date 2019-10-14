@@ -126,10 +126,6 @@ async def on_member_join(member):
         return
     else:
         return
-    if member_id == 621017160008859679:
-        home_server.ban(member,reason="Banned by Bloody for repeatedly joining/leaving within a minute (over 15 times in the span of 2 weeks) for no apparent reason")
-        unboost_channel_ID = client.get_channel(unboost_channel_ID)
-        await unboost_channel_ID.send("<@{0}> I banned Liav :banhammer:".format(109734116034940928))
 
 
 
