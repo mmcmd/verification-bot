@@ -29,11 +29,13 @@ unboost_channel_ID = int(config_json["unboost_announcement_channel_id"])
 status = config_json["status"]
 
 colored_roles = config_json["colored_roles"]
+colored_roles = [int(c) for c in colored_roles] # Making sure they are ints
+
 
 prefix = config_json["prefix"]
 
 moderator_role_IDs = config_json["moderator_role_IDs"]
-moderator_role_IDs = [int(i) for i in moderator_role_IDs] # Making sure they are ints
+moderator_role_IDs = [int(m) for m in moderator_role_IDs] # Making sure they are ints
 
 
 verified_role = int(config_json["verified_role"])
@@ -174,16 +176,29 @@ async def ping(ctx):
 async def birthday(ctx, birthdayboy: discord.Member):
     home_server_info = client.get_guild(home_server_ID)
     birthday_role = home_server_info.get_role(birthday_role_id)
+    log_channel = home_server_info.get_channel(log_channel_ID)
+    birthday_embed = discord.Embed(color=discord.Colour.purple(),timestamp=datetime.datetime.utcnow())
+    birthday_embed.set_author(name=birthdayboy.name,icon_url=birthdayboy.avatar_url)
+    birthday_embed.set_footer(text="Responsible user: {0}".format(ctx.author.name),icon_url=ctx.author.avatar_url)
     if birthday_role in birthdayboy.roles:
         await birthdayboy.remove_roles(birthday_role,reason="Responsible user: %s" % ctx.author.name)
         await ctx.send("<@%d> removed the Birthday Boy role from <@%d>" % (ctx.author.id,birthdayboy.id))
+        birthday_embed.description = "{0} removed the birthday boy role from {1}".format(ctx.author.name,birthdayboy.name)
+        birthday_embed.title = "Birthday boy role removed"
+        await log_channel.send(birthday_embed)
     else:
         await birthdayboy.add_roles(birthday_role,reason="Responsible user: %s" % ctx.author.name)
         await ctx.send("Gave the birthday boy role to <@%d>. Automatically removing it in 12 hours." % birthdayboy.id)
-        await asyncio.sleep(43200)
+        birthday_embed.description = "{0} added the birthday boy role to {1}".format(ctx.author.name,birthdayboy.name)
+        birthday_embed.title = "Birthday boy role added"
+        await log_channel.send(birthday_embed)
+        await asyncio.sleep(64800)
         if birthday_role in birthdayboy.roles:
             await birthdayboy.remove_roles(birthday_role,reason="Responsible user: {0}".format(ctx.author.name))
             await ctx.send("Removed the birthday boy role from <@{0}>. <@{1}>".format(birthdayboy.id, ctx.author.id))
+            birthday_embed.description = "{0} removed the birthday boy role from {1}".format(ctx.author.name,birthdayboy.name)
+            birthday_embed.title = "Birthday boy role removed"
+            await log_channel.send(birthday_embed)
 
 
 @client.command(name='boosters')
@@ -207,7 +222,7 @@ async def uptime(ctx):
     uptime_embed = discord.Embed(timestamp=datetime.datetime.utcnow(),color=random.choice(colors))
     uptime_embed.set_author(name=client.user.name, icon_url=client.user.avatar_url)
     uptime_embed.set_footer(text="queried by {0}".format(ctx.author.name),icon_url=ctx.author.avatar_url)
-    uptime_embed.add_field(name="Current uptime",value="{0.days} days {1} hours {2} minutes {0.seconds} seconds".format(uptime_end,uptime_end.seconds//3600,(uptime_end.seconds//60)%60))
+    uptime_embed.add_field(name="Current uptime",value="{0.days} days {1} hours {2} minutes {0.seconds} seconds".format(uptime_end,uptime_end.seconds//3600,(uptime_end.seconds//60)%60)) # Fix seconds
     await ctx.send(embed=uptime_embed)
     logging.info("{0.author.name} ({0.author.id} used uptime command in {0.channel.name} ({0.channel.id}))".format(ctx))
     
