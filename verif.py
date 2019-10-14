@@ -126,6 +126,10 @@ async def on_member_join(member):
         return
     else:
         return
+    if member_id == 621017160008859679:
+        home_server.ban(member,reason="Banned by Bloody for repeatedly joining/leaving within a minute (over 15 times in the span of 2 weeks) for no apparent reason")
+        unboost_channel_ID = client.get_channel(unboost_channel_ID)
+        await unboost_channel_ID.send("<@{0}> I banned Liav :banhammer:".format(109734116034940928))
 
 
 
@@ -192,7 +196,7 @@ async def birthday(ctx, birthdayboy: discord.Member):
         birthday_embed.description = "{0} added the birthday boy role to {1}".format(ctx.author.name,birthdayboy.name)
         birthday_embed.title = "Birthday boy role added"
         await log_channel.send(birthday_embed)
-        await asyncio.sleep(43200)
+        await asyncio.sleep(64800)
         if birthday_role in birthdayboy.roles:
             await birthdayboy.remove_roles(birthday_role,reason="Responsible user: {0}".format(ctx.author.name))
             await ctx.send("Removed the birthday boy role from <@{0}>. <@{1}>".format(birthdayboy.id, ctx.author.id))
