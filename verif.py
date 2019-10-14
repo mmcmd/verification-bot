@@ -42,6 +42,9 @@ birthday_role_id = int(config_json["birthday_role_ID"])
 
 colors = [discord.Colour.purple(), discord.Colour.blue(), discord.Colour.red(), discord.Colour.green(), discord.Colour.orange()] # Discord colors for embedding
 
+uptime_start = datetime.datetime.utcnow()
+
+
 
 # Logging in to the bot
 
@@ -52,7 +55,6 @@ client = commands.Bot(command_prefix=prefix)
 async def on_ready():
     print('Logged in as {0.user}'.format(client))
     logging.info('Logged in as {0.user}'.format(client))
-
     await client.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name=status))
 
 
@@ -125,6 +127,7 @@ async def on_member_join(member):
 
 
 
+
 # Event to remove colored roles when a member unboosts
 @client.event
 async def on_member_update(member,updatedmember):
@@ -133,11 +136,11 @@ async def on_member_update(member,updatedmember):
     member_id = member.id # Members ID
     if check_boost is not None:
         if check_if_unboost is None:
-            logging.info("%s (%d) unboosted the server." % (str(member.name),member_id))
+            logging.info("{0} ({1}) unboosted the server.".format(member.name,member_id))
             home_server = client.get_guild(home_server_ID)
             log_channel_unboost = client.get_channel(unboost_channel_ID) # #logs channel
-            log_embed_unboost = discord.Embed(description="<@%d> (%d) unboosted the server."% (member_id),timestamp=datetime.datetime.utcnow(),color=discord.Colour.red())
-            log_embed_unboost.set_author(name=member.id, icon_url=member.avatar_url)
+            log_embed_unboost = discord.Embed(description="{0} ({1}) unboosted the server.".format(member.mention,member.id),timestamp=datetime.datetime.utcnow(),color=discord.Colour.red())
+            log_embed_unboost.set_author(name=member.name, icon_url=member.avatar_url)
             await log_channel_unboost.send(embed=log_embed_unboost)
             for role in colored_roles:
                 role = home_server.get_role(role)
@@ -179,8 +182,47 @@ async def birthday(ctx, birthdayboy: discord.Member):
         await ctx.send("Gave the birthday boy role to <@%d>. Automatically removing it in 12 hours." % birthdayboy.id)
         await asyncio.sleep(43200)
         if birthday_role in birthdayboy.roles:
-            await birthdayboy.remove_roles(birthday_role,reason="Responsible user: %s" % ctx.author.name)
-            await ctx.send("Removed the birthday boy role from <@%d>. <@%d>" % (birthdayboy.id, ctx.author.id))
+            await birthdayboy.remove_roles(birthday_role,reason="Responsible user: {0}".format(ctx.author.name))
+            await ctx.send("Removed the birthday boy role from <@{0}>. <@{1}>".format(birthdayboy.id, ctx.author.id))
+
+
+@client.command(name='boosters')
+@commands.cooldown(1,15,commands.BucketType.channel)
+async def boosters(ctx):
+    home_server_info = client.get_guild(home_server_ID)
+    boosters_list = home_server_info.premium_subscribers
+    boosters_list.sort(key=lambda b: b.premium_since) # Sorts boosters from oldest to most recent
+    booster_embed = discord.Embed(title="There are currently {0} people boosting the server. Current tier: {1}".format(home_server_info.premium_subscription_count, home_server_info.premium_tier),timestamp=datetime.datetime.utcnow(),color=discord.Colour.blue())
+    booster_embed.set_footer(text="queried by {0}".format(ctx.author.name),icon_url=ctx.author.avatar_url)
+    booster_embed.set_author(name=ctx.guild.name,icon_url=ctx.guild.icon_url)
+    for booster in boosters_list:
+        booster_embed.add_field(name="{0}, joined {1}".format(booster.name,booster.joined_at.strftime("%b %d %Y")),value="{0} - Boosting since: {1}".format(booster.mention,booster.premium_since.strftime("%b %d %Y")),inline=False)
+    await ctx.send(embed=booster_embed)
+
+
+@client.command(name='uptime')
+@commands.cooldown(1,10,commands.BucketType.user)
+async def uptime(ctx):
+    uptime_end = datetime.datetime.utcnow() - uptime_start
+    uptime_embed = discord.Embed(timestamp=datetime.datetime.utcnow(),color=random.choice(colors))
+    uptime_embed.set_author(name=client.user.name, icon_url=client.user.avatar_url)
+    uptime_embed.set_footer(text="queried by {0}".format(ctx.author.name),icon_url=ctx.author.avatar_url)
+    uptime_embed.add_field(name="Current uptime",value="{0.days} days {1} hours {2} minutes {0.seconds} seconds".format(uptime_end,uptime_end.seconds//3600,(uptime_end.seconds//60)%60))
+    await ctx.send(embed=uptime_embed)
+    logging.info("{0.author.name} ({0.author.id} used uptime command in {0.channel.name} ({0.channel.id}))".format(ctx))
+    
+
+@client.command(name='github')
+@commands.cooldown(1,10,commands.BucketType.user)
+async def github(ctx):
+    github_embed = discord.Embed(timestamp=datetime.datetime.utcnow(),colors=random.choice(colors))
+    github_embed.set_author(name="github.com/mmcmd",icon_url="https://avatars1.githubusercontent.com/u/36875145")
+    github_embed.set_footer(text="queried by {0}".format(ctx.author.name),icon_url=ctx.author.avatar_url)
+    github_embed.add_field(name="The source code of this bot can be found at:",value="https://github.com/mmcmd/verification-bot")
+    await ctx.send(embed=github_embed)
+
+
+
 
 
 client.run(token)
