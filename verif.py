@@ -15,41 +15,32 @@ with open("config.json", "r") as read: # Imports config json file
 # Static variables 
 token = config_json["token"]
 home_server_ID = int(config_json["homeserver_id"])
-
 verification_requirement_join = int(config_json["verification_requirement_join"])
-
 verification_requirement_message = int(config_json["verification_requirement_message"])
-
 moderator_mail = int(config_json["moderator_mail_id"])
-
 log_channel_ID = int(config_json["log_channel_id"])
-
 unboost_channel_ID = int(config_json["unboost_announcement_channel_id"])
-
 status = config_json["status"]
-
 colored_roles = config_json["colored_roles"]
-colored_roles = [int(c) for c in colored_roles] # Making sure they are ints
-
-
 prefix = config_json["prefix"]
-
 moderator_role_IDs = config_json["moderator_role_IDs"]
-moderator_role_IDs = [int(m) for m in moderator_role_IDs] # Making sure they are ints
-
-
 verified_role = int(config_json["verified_role"])
-
 birthday_role_id = int(config_json["birthday_role_ID"])
 
-colors = [discord.Colour.purple(), discord.Colour.blue(), discord.Colour.red(), discord.Colour.green(), discord.Colour.orange()] # Discord colors for embedding
+# Validation of JSON
+# Making sure they are ints
+colored_roles = [int(c) for c in colored_roles] 
+moderator_role_IDs = [int(m) for m in moderator_role_IDs]
 
+# Message Text for verification_requirement_join
+verification_requirements_join_text = number_to_days_text(verification_requirement_join)
+verification_requirements_message_text = number_to_days_text(verification_requirement_message)
+
+# Discord colors for embedding
+colors = [discord.Colour.purple(), discord.Colour.blue(), discord.Colour.red(), discord.Colour.green(), discord.Colour.orange()] 
 uptime_start = datetime.datetime.utcnow()
 
-
-
 # Logging in to the bot
-
 client = commands.Bot(command_prefix=prefix)
 
 
@@ -60,12 +51,9 @@ async def on_ready():
     await client.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name=status))
 
 
-
-
 # Verification functions
 @client.event
 async def on_message(message):
-
     if message.author == client.user: # Ignores the bots own messages
         return
 
@@ -82,7 +70,7 @@ async def on_message(message):
             home_server_verified_role = home_server.get_role(verified_role) # The ID of the role that the bot gives in order for the person to be able to use the server 
             if home_server_top_role == "@everyone":
                 if account_age_days < verification_requirement_message:
-                    await message.channel.send("Sorry, your account must be 5 days or older in order to get verified. Please either verify with your phone number or contact the mod team through <@%s> (Moderator mail, top of the member list) for manual verification if you're unable to verify with a phone number."% str(moderator_mail))
+                    await message.channel.send("Sorry, your account must be {} or older in order to get verified. Please either verify with your phone number or contact the mod team through <@{}}> (Moderator mail, top of the member list) for manual verification if you're unable to verify with a phone number.".format(verification_requirement_message_text, moderator_mail))
                     logembedfail = discord.Embed(description='<@%d> (%s) attempted to get manually verified, however his account age is too low (%d days)'% (int(author_id), str(author_id), account_age_days),timestamp=datetime.datetime.utcnow(),color=discord.Colour.red())
                     logembedfail.set_author(name=message.author.name, icon_url=message.author.avatar_url)
                     logging.info(message.author.name + "(%d) attempted to get manually verified, but his account age was too low (%d days)"% (author_id, account_age_days))
@@ -107,7 +95,7 @@ async def on_message(message):
 
 
 
-# Event to automatically verify people with account ages over 3 months old
+# Event to automatically verify people with account ages over N days old
 @client.event
 async def on_member_join(member):
     member_id = int(member.id)
@@ -118,11 +106,11 @@ async def on_member_join(member):
     home_server_info = home_server.get_member(member_id) # Fetches user info from said guild
     home_server_verified_role = home_server.get_role(verified_role) # The ID of the role that the bot gives in order for the person to be able to use the server 
     if account_age_days > verification_requirement_join:
-        await home_server_info.add_roles(home_server_verified_role, reason="Account age is over 3 months (%d days), user has automatically been verified."% account_age_days) # Adds unverified role to the user
-        log_embed = discord.Embed(description="<@%d> has been verified automatically because his account age is over 3 months (%d days)"% (member_id,account_age_days),timestamp=datetime.datetime.utcnow(),color=discord.Colour.green())
+        await home_server_info.add_roles(home_server_verified_role, reason="Account age is over {} (user account is {} days old), user has automatically been verified.".format(verification_requirement_join_text, account_age_days)) # Adds unverified role to the user
+        log_embed = discord.Embed(description="<@{}> has been verified automatically because his account age is over {} (user account is {} days old)".format(member_id, verification_requirement_join_text, account_age_days),timestamp=datetime.datetime.utcnow(),color=discord.Colour.green())
         log_embed.set_author(name=member.id, icon_url=member.avatar_url)
         await log_channel.send(embed=log_embed)
-        logging.info("%s (%d) has been verified automatically because his account age is over 3 months (%d days)"% (str(member.name),member_id,account_age_days))
+        logging.info("{} ({}) has been verified automatically because his account age is over {} (user account age is {} days)".format(member.name, member_id, verification_requirement_join_text, account_age_days))
         return
     else:
         return
@@ -237,7 +225,11 @@ async def github(ctx):
     await ctx.send(embed=github_embed)
 
 
-
+# Convert Input to Day/Days string
+def number_to_days_text(x):
+    x_text = "{} day".format(x)
+    if(x != 1):
+        x_text += "s"
 
 
 client.run(token)
