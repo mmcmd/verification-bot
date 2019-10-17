@@ -283,6 +283,7 @@ def number_to_text(x, suffix):
     x_text = "{0} {1}".format(x, suffix)
     if(x != 1):
         x_text += "s"
+    return x_text
 
 
 client.run(token)
