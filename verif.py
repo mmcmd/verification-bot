@@ -219,7 +219,7 @@ async def birthdayx(ctx, birthdayx, gender):
     birthday_embed = discord.Embed(color=discord.Colour.purple(),timestamp=datetime.datetime.utcnow())
     birthday_embed.set_author(name=birthdayx.name,icon_url=birthdayx.avatar_url)
     birthday_embed.set_footer(text="Responsible user: {0}".format(ctx.author.name),icon_url=ctx.author.avatar_url)
-    duration = message_templates['birthday']['duration_hours']
+    duration = int(message_templates['birthday']['duration_hours'])
     duration_text = number_to_text(duration, 'hour')
     if birthday_role in birthdayx.roles:
         await birthdayx.remove_roles(birthday_role,reason="Responsible user: {0}".format(ctx.author.name))
