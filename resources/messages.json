@@ -1,0 +1,14 @@
+{
+    "on_message": {
+        "verify_begin": "Sorry, your account must be {0} or older in order to get verified. Please either verify with your phone number or contact the mod team through <@{1}}> (Moderator mail, top of the member list) for manual verification if you're unable to verify with a phone number.",
+        "verify_done": "You have been verified. Please remember to read the <#{0}>. You may also assign yourself roles in <#{1}>. If you ever have an issue, do not hesitate to message <@{2}> (Moderator Mail, top of the member list)",
+        "verify_abort": "You're already able to speak in the server, there is no need for you to get verified. Contact <@{0}> (Moderator Mail, top of the member list) if there is an issue.",
+        "verify_done_channel0": "448941767325253632",
+        "verify_done_channel1": "516816975427797012"
+    },
+    "birthday": {
+    	"role_add": "Gave the Birthday {0} role to <@{1}>. Automatically removing it in {2}",
+    	"role_remove": "<@{0}> removed the Birthday {1} role from <@{2}>",
+    	"duration_hours": "12"
+    }
+}
