@@ -33,6 +33,14 @@ moderator_role_IDs = config_json["moderator_role_IDs"]
 verified_role = int(config_json["verified_role"])
 birthday_role_id = int(config_json["birthday_role_ID"])
 
+# Convert Input to Day/Days string
+def number_to_text(x, suffix):
+    x_text = "{0} {1}".format(x, suffix)
+    if(x != 1):
+        x_text += "s"
+    return x_text
+
+
 # Validation of JSON
 # Making sure they are ints
 colored_roles = [int(c) for c in colored_roles] 
@@ -206,10 +214,10 @@ async def birthdayboy(ctx, birthdayboy: discord.Member):
 async def birthdaygirl(ctx, birthdaygirl: discord.Member):
     await birthdayx(ctx, birthdaygirl, 'girl')
 
-@client.command(name='birthdaynerd')
-@commands.has_any_role(*moderator_role_IDs)
-async def birthdaygirl(ctx, birthdaygirl: discord.Member):
-    await birthdayx(ctx, birthdaygirl, 'nerd')
+#@client.command(name='birthdaynerd')
+#@commands.has_any_role(*moderator_role_IDs)
+#async def birthdaygirl(ctx, birthdaygirl: discord.Member):
+#    await birthdayx(ctx, birthdaygirl, 'nerd')
 
 # Gender Neutral implementation of Birthday Person
 async def birthdayx(ctx, birthdayx, gender):
@@ -258,10 +266,10 @@ async def boosters(ctx):
 
 @client.command(name='uptime')
 @commands.cooldown(1,10,commands.BucketType.user)
-async def uptime(self, ctx):
-    uptime_end = datetime.datetime.utcnow() - self.uptime_start
-    uptime_embed = discord.Embed(timestamp=datetime.datetime.utcnow(),color=discord.Colour.red())
-    uptime_embed.set_author(name=self.bot.user.name, icon_url=self.bot.user.avatar_url)
+async def uptime(ctx):
+    uptime_end = datetime.datetime.utcnow() - uptime_start
+    uptime_embed = discord.Embed(timestamp=datetime.datetime.utcnow(),color=random.choice(colors))
+    uptime_embed.set_author(name=client.user.name, icon_url=client.user.avatar_url)
     uptime_embed.set_footer(text="queried by {0}".format(ctx.author.name),icon_url=ctx.author.avatar_url)
 
     uptime_embed.add_field(name="Current uptime",value="{0} days {1} hours {2} minutes {3} seconds".format(
@@ -282,14 +290,5 @@ async def github(ctx):
     github_embed.set_footer(text="queried by {0}".format(ctx.author.name),icon_url=ctx.author.avatar_url)
     github_embed.add_field(name="The source code of this bot can be found at:",value="https://github.com/mmcmd/verification-bot")
     await ctx.send(embed=github_embed)
-
-
-# Convert Input to Day/Days string
-def number_to_text(x, suffix):
-    x_text = "{0} {1}".format(x, suffix)
-    if(x != 1):
-        x_text += "s"
-    return x_text
-
 
 client.run(token)
