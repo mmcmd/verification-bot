@@ -263,7 +263,7 @@ async def uptime(ctx):
     uptime_embed = discord.Embed(timestamp=datetime.datetime.utcnow(),color=random.choice(colors))
     uptime_embed.set_author(name=client.user.name, icon_url=client.user.avatar_url)
     uptime_embed.set_footer(text="queried by {0}".format(ctx.author.name),icon_url=ctx.author.avatar_url)
-    uptime_embed.add_field(name="Current uptime",value="{0.days} days {1} hours {2} minutes {0.seconds} seconds".format(uptime_end,uptime_end.seconds//3600,(uptime_end.seconds//60)%60)) # Fix seconds
+    uptime_embed.add_field(name="Current uptime",value="{0} days {1} hours {2} minutes {3} seconds".format(uptime_end.days,uptime_end.seconds//3600,(uptime_end.seconds//60)%60,uptime_end.seconds%60))
     await ctx.send(embed=uptime_embed)
     logging.info("{0.author.name} ({0.author.id} used uptime command in {0.channel.name} ({0.channel.id}))".format(ctx))
     
