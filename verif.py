@@ -7,155 +7,164 @@ import datetime
 from discord.ext import commands
 import json
 
-# Logs to verification.log file
-logging.basicConfig(filename='verification.log', filemode='w', format='%(asctime)s - %(levelname)s - %(message)s',level=logging.INFO,datefmt='%Y-%m-%d %H:%M:%S') 
+from discord.partial_emoji import PartialEmoji
 
-# Imports config json file
-with open("config.json", "r") as read: 
+logging.basicConfig(filename='verification.log', filemode='w', format='%(asctime)s - %(levelname)s - %(message)s',level=logging.INFO,datefmt='%Y-%m-%d %H:%M:%S') # Logs to verification.log file
+with open("config.json", "r") as read: # Imports config json file
     config_json = json.load(read)
 
-# Imports messages json file
-with open("resources/messages.json", "r") as read: 
-    message_templates = json.load(read)
 
-# Static variables 
+# Static variables
 token = config_json["token"]
 home_server_ID = int(config_json["homeserver_id"])
+
 verification_requirement_join = int(config_json["verification_requirement_join"])
+
 verification_requirement_message = int(config_json["verification_requirement_message"])
+
 moderator_mail = int(config_json["moderator_mail_id"])
+
 log_channel_ID = int(config_json["log_channel_id"])
+
 unboost_channel_ID = int(config_json["unboost_announcement_channel_id"])
+
 status = config_json["status"]
+
 colored_roles = config_json["colored_roles"]
+colored_roles = [int(c) for c in colored_roles] # Making sure they are ints
+
+
 prefix = config_json["prefix"]
+
 moderator_role_IDs = config_json["moderator_role_IDs"]
+moderator_role_IDs = [int(m) for m in moderator_role_IDs] # Making sure they are ints
+
+
 verified_role = int(config_json["verified_role"])
+
+emergency_request_approval_threshold = int(config_json["emergency_request_approval_threshold"])
+
+emergency_request_deny_threshold = int(config_json["emergency_request_deny_threshold"])
+
+emergency_request_deny_threshold = int(config_json["emergency_request_deny_threshold"])
+
+ontopic_category_id = int(config_json["ontopic_category_id"])
+
+emergency_role_id = int(config_json["emergency_role_id"])
+
+
 birthday_role_id = int(config_json["birthday_role_ID"])
 
-# Validation of JSON
-# Making sure they are ints
-colored_roles = [int(c) for c in colored_roles] 
-moderator_role_IDs = [int(m) for m in moderator_role_IDs]
+colors = [discord.Colour.purple(), discord.Colour.blue(), discord.Colour.red(), discord.Colour.green(), discord.Colour.orange()] # Discord colors for embedding
 
-# Message Text for verification_requirement_join
-verification_requirements_join_text = number_to_text(verification_requirement_join, 'day')
-verification_requirements_message_text = number_to_text(verification_requirement_message, 'day')
-
-# Discord colors for embedding
-colors = [discord.Colour.purple(), discord.Colour.blue(), discord.Colour.red(), discord.Colour.green(), discord.Colour.orange()] 
 uptime_start = datetime.datetime.utcnow()
 
+
+
+# Enable intents
+intents = discord.Intents.default()
+intents.members = True
+
+
 # Logging in to the bot
-client = commands.Bot(command_prefix=prefix)
+
+client = commands.Bot(command_prefix=prefix,activity=discord.Activity(type=discord.ActivityType.playing), name=status, intents=intents)
+
 
 
 @client.event
 async def on_ready():
     print('Logged in as {0.user}'.format(client))
     logging.info('Logged in as {0.user}'.format(client))
-    await client.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name=status))
+
+
+# Ontopic category checker function (checks if the category of the channel is in the on-topic section)
+def ontopic(ctx):
+    return ctx.channel.category.id == ontopic_category_id
+
+def cleanup_emergency(): # Function to cleanup once an emergency is over
+    client.approved_list.clear()
+    client.denied_list.clear()
+    client.emergency_active = None
+    client.emergency_caller_object = None
+    client.bot_emergency_message = None
+
+
+# Variables for the emergency command to be used across multiple funcctions
+client.emergency_active = None # Boolean for knowing if there is an active emergency request
+client.approved_list = [] # List of people who have approved the emergency
+client.denied_list = [] # List of people who have denied the emergency
+client.emergency_caller_object = None # Bot variable that tracks the object of whoever sent the !emergency message
+client.bot_emergency_message = None # Object for the emergency that the bot sends
+
+
 
 
 # Verification functions
 @client.event
 async def on_message(message):
+
     if message.author == client.user: # Ignores the bots own messages
         return
 
     if message.guild is None:
-        logging.info("Direct message received: {0} - sent by {1} (ID: {2})".format(message.content.lower(), message.author.name, message.author.id))
+        logging.info("Direct message received: %s - sent by %s (ID: %d)"% (message.content.lower(),message.author.name, message.author.id))
         if "verify" in message.content.lower() or "verified" in message.content.lower():
-            # Author's ID
-            author_id = int(message.author.id) 
-
-            # Subtracts current time with account creation date to get account age
-            account_age = datetime.datetime.utcnow() - message.author.created_at
-            
-            # Account age in days
-            account_age_days = account_age.days 
-            
-            # Gets the guild
-            home_server = client.get_guild(home_server_ID) 
-            
-            # logs channel
-            log_channel = client.get_channel(log_channel_ID) 
-            
-            # Fetches user info from said guild
-            home_server_info = home_server.get_member(author_id) 
-            
-            # Fetches top role from user info
-            home_server_top_role = str(home_server_info.top_role.name) 
-            
-            # The ID of the role that the bot gives in order for the person to be able to use the server 
-            home_server_verified_role = home_server.get_role(verified_role) 
-
+            author_id = int(message.author.id) # Author's ID
+            account_age = datetime.datetime.utcnow() - message.author.created_at # Subtracts current time with account creation date to get account age
+            account_age_days = account_age.days # Account age in days
+            home_server = client.get_guild(home_server_ID) # Gets the guild
+            log_channel = client.get_channel(log_channel_ID) # #logs channel
+            home_server_info = home_server.get_member(author_id) # Fetches user info from said guild
+            home_server_top_role = str(home_server_info.top_role.name) # Fetches top role from user info
+            home_server_verified_role = home_server.get_role(verified_role) # The ID of the role that the bot gives in order for the person to be able to use the server
             if home_server_top_role == "@everyone":
                 if account_age_days < verification_requirement_message:
-                    await message.channel.send((message_templates['on_message']['verify_begin']).format(verification_requirement_message_text, moderator_mail))
-                    logembedfail = discord.Embed(description='<@{0}> ({1}) attempted to get manually verified, however his account age is too low ({2} days)'.format(int(author_id), str(author_id), account_age_days),timestamp=datetime.datetime.utcnow(),color=discord.Colour.red())
+                    await message.channel.send("Sorry, your account must be 5 days or older in order to get verified. Please either verify with your phone number or contact the mod team through <@%s> (Moderator mail, top of the member list) for manual verification if you're unable to verify with a phone number."% str(moderator_mail))
+                    logembedfail = discord.Embed(description='<@%d> (%s) attempted to get manually verified, however his account age is too low (%d days)'% (int(author_id), str(author_id), account_age_days),timestamp=datetime.datetime.utcnow(),color=discord.Colour.red())
                     logembedfail.set_author(name=message.author.name, icon_url=message.author.avatar_url)
-                    logging.info("{0} ({1}) attempted to get manually verified, but his account age was too low ({2} days)".format(message.author.name, author_id, account_age_days))
+                    logging.info(message.author.name + "(%d) attempted to get manually verified, but his account age was too low (%d days)"% (author_id, account_age_days))
                     await log_channel.send(embed=logembedfail)
                     return
                 elif account_age_days >= verification_requirement_message:
-                    # Adds unverified role to the user
-                    await home_server_info.add_roles(home_server_verified_role, reason="User has manually been verified with Verification bot. Account age: {0} days".format(account_age_days))
-                    log_embed = discord.Embed(description="<@{0}> has been verified".format(author_id),timestamp=datetime.datetime.utcnow(),color=discord.Colour.green())
+                    await home_server_info.add_roles(home_server_verified_role, reason="User has manually been verified with Verification bot. Account age: %d days" % account_age_days) # Adds unverified role to the user
+                    log_embed = discord.Embed(description="<@%d> has been verified"% author_id,timestamp=datetime.datetime.utcnow(),color=discord.Colour.green())
                     log_embed.set_author(name=message.author.name, icon_url=message.author.avatar_url)
                     await log_channel.send(embed=log_embed)
-                    await message.channel.send((message_templates['on_message']['verify_done']).format(message_templates['on_message']['verify_done_channel0'],message_templates['on_message']['verify_done_channel1'],moderator_mail))
+                    await message.channel.send("You have been verified. Please remember to read the <#%s>. You may also assign yourself roles in <#%s>. If you ever have an issue, do not hesitate to message <@%s> (Moderator Mail, top of the member list)"% (str(448941767325253632),str(516816975427797012),str(moderator_mail)))
                     await message.add_reaction('✅')
-                    logging.info("{0} ({1}) has been verified. Account age: {2} days".format(message.author.name, author_id,account_age_days))
+                    logging.info(message.author.name + " (%d) has been verified. Account age: %d days" % (author_id,account_age_days))
                     return
             else:
-                await message.channel.send((message_templates['on_message']['verify_abort']).format(moderator_mail))
-                logging.info("{0} ({1}) attempted to get verified, but doesn't have @ everyone as his top role. Verification aborted.".format(message.author.name,author_id))
+                await message.channel.send("You're already able to speak in the server, there is no need for you to get verified. Contact <@%s> (Moderator Mail, top of the member list) if there is an issue."% str(moderator_mail))
+                logging.info(message.author.name + " (%d) attempted to get verified, but doesn't have @ everyone as his top role. Verification aborted."% author_id)
                 return
     await client.process_commands(message)
 
 
 
 
-
-# Event to automatically verify people with account ages over N days old
+# Event to automatically verify people with account ages over 3 months old
 @client.event
 async def on_member_join(member):
     member_id = int(member.id)
-
-    # Subtracts current time with account creation date to get account age
-    account_age = datetime.datetime.utcnow() - member.created_at 
-    
-    # Account age in days
-    account_age_days = account_age.days 
-
-    # Gets the guild
-    home_server = client.get_guild(home_server_ID) 
-
-    # Logs channel
-    log_channel = client.get_channel(log_channel_ID) 
-
-    # Fetches user info from said guild
-    home_server_info = home_server.get_member(member_id) 
-
-    # The ID of the role that the bot gives in order for the person to be able to use the server 
-    home_server_verified_role = home_server.get_role(verified_role) 
-
+    account_age = datetime.datetime.utcnow() - member.created_at # Subtracts current time with account creation date to get account age
+    account_age_days = account_age.days # Account age in days
+    home_server = client.get_guild(home_server_ID) # Gets the guild
+    log_channel = client.get_channel(log_channel_ID) # #logs channel
+    home_server_info = home_server.get_member(member_id) # Fetches user info from said guild
+    home_server_verified_role = home_server.get_role(verified_role) # The ID of the role that the bot gives in order for the person to be able to use the server
     if account_age_days > verification_requirement_join:
-        # Adds unverified role to the user
-        await home_server_info.add_roles(home_server_verified_role, reason="Account age is over {0} (user account is {1} days old), user has automatically been verified.".format(verification_requirement_join_text, account_age_days)) 
-        log_embed = discord.Embed(description="<@{0}> has been verified automatically because his account age is over {1} (user account is {2} days old)".format(member_id, verification_requirement_join_text, account_age_days),timestamp=datetime.datetime.utcnow(),color=discord.Colour.green())
+        await home_server_info.add_roles(home_server_verified_role, reason="Account age is over 3 months (%d days), user has automatically been verified."% account_age_days) # Adds unverified role to the user
+        log_embed = discord.Embed(description="<@%d> has been verified automatically because his account age is over 3 months (%d days)"% (member_id,account_age_days),timestamp=datetime.datetime.utcnow(),color=discord.Colour.green())
         log_embed.set_author(name=member.id, icon_url=member.avatar_url)
         await log_channel.send(embed=log_embed)
-        logging.info("{0} ({1}) has been verified automatically because his account age is over {2} (user account age is {3} days)".format(member.name, member_id, verification_requirement_join_text, account_age_days))
-        return
-    else:
+        logging.info("%s (%d) has been verified automatically because his account age is over 3 months (%d days)"% (str(member.name),member_id,account_age_days))
         return
 
 
 
-
-# Event to remove colored roles when a member unboosts
+# Event to remove colored roles when a member unboosts and to also msg a user if he boosts
 @client.event
 async def on_member_update(member,updatedmember):
     check_boost = member.premium_since
@@ -172,6 +181,13 @@ async def on_member_update(member,updatedmember):
             for role in colored_roles:
                 role = home_server.get_role(role)
                 await updatedmember.remove_roles(role, reason="User unboosted the server, colors have been removed")
+    if check_boost is None:
+        if check_if_unboost is not None:
+            logging.info("{0} ({1}) boosted the server.".format(member.name,member_id))
+            await member.send("Thank you for boosting /r/sysadmin! As a booster you have access to a new channel (<#585867795942604800>) as well as being" \
+            " able to choose from a variety of colored roles. Check the <#516816975427797012> channel for more info on getting a colored role!\n If you have any questions feel free" \
+            " to message Moderator Mail (top of the member list)")
+
 
 
 
@@ -196,58 +212,40 @@ async def ping(ctx):
     await ctx.send(embed=pingem)
 
 
-@client.command(name='birthdayboy')
+@client.command(name='birthday')
 @commands.has_any_role(*moderator_role_IDs)
-async def birthdayboy(ctx, birthdayboy: discord.Member):
-    await birthdayx(ctx, birthdayboy, 'boy')
-
-@client.command(name='birthdaygirl')
-@commands.has_any_role(*moderator_role_IDs)
-async def birthdaygirl(ctx, birthdaygirl: discord.Member):
-    await birthdayx(ctx, birthdaygirl, 'girl')
-
-@client.command(name='birthdaynerd')
-@commands.has_any_role(*moderator_role_IDs)
-async def birthdaygirl(ctx, birthdaygirl: discord.Member):
-    await birthdayx(ctx, birthdaygirl, 'nerd')
-
-# Gender Neutral implementation of Birthday Person
-async def birthdayx(ctx, birthdayx, gender):
+async def birthday(ctx, birthdayboy: discord.Member):
     home_server_info = client.get_guild(home_server_ID)
     birthday_role = home_server_info.get_role(birthday_role_id)
     log_channel = home_server_info.get_channel(log_channel_ID)
     birthday_embed = discord.Embed(color=discord.Colour.purple(),timestamp=datetime.datetime.utcnow())
-    birthday_embed.set_author(name=birthdayx.name,icon_url=birthdayx.avatar_url)
+    birthday_embed.set_author(name=birthdayboy.name,icon_url=birthdayboy.avatar_url)
     birthday_embed.set_footer(text="Responsible user: {0}".format(ctx.author.name),icon_url=ctx.author.avatar_url)
-    duration = int(message_templates['birthday']['duration_hours'])
-    duration_text = number_to_text(duration, 'hour')
-    if birthday_role in birthdayx.roles:
-        await birthdayx.remove_roles(birthday_role,reason="Responsible user: {0}".format(ctx.author.name))
-        await ctx.send((message_templates['birthday']['role_remove']).format(ctx.author.id, gender.title(), birthdayx.id))
-        birthday_embed.description = "{0} removed the birthday {1} role from {2}".format(ctx.author.name, gender, birthdayx.name)
-        birthday_embed.title = "Birthday {0} role removed".format(gender.title())
+    if birthday_role in birthdayboy.roles:
+        await birthdayboy.remove_roles(birthday_role,reason="Responsible user: %s" % ctx.author.name)
+        birthday_embed.description = "{0} removed the birthday boy role from {1}".format(ctx.author.name,birthdayboy.name)
+        birthday_embed.title = "Birthday boy role removed"
         await log_channel.send(birthday_embed)
     else:
-        await birthdayx.add_roles(birthday_role,reason="Responsible user: {0}".format(ctx.author.name))
-        await ctx.send((message_templates['birthday']['role_add']).format(gender.title(), birthdayx.id, duration_text))
-        birthday_embed.description = "{0} added the birthday {1} role to {2}".format(ctx.author.name, gender, birthdayx.name)
-        birthday_embed.title = "Birthday {0} role added".format(gender.title())
+        await birthdayboy.add_roles(birthday_role,reason="Responsible user: %s" % ctx.author.name)
+        await ctx.send("Gave the birthday boy role to <@%d>. Automatically removing it in 12 hours." % birthdayboy.id)
+        birthday_embed.description = "{0} added the birthday boy role to {1}".format(ctx.author.name,birthdayboy.name)
+        birthday_embed.title = "Birthday boy role added"
         await log_channel.send(birthday_embed)
-        await asyncio.sleep(duration*3600)
-        if birthday_role in birthdayx.roles:
-            await birthdayx.remove_roles(birthday_role,reason="Responsible user: {0}".format(ctx.author.name))
-            await ctx.send((message_templates['birthday']['role_remove']).format(ctx.author.id, gender.title(), birthdayx.id))
-            birthday_embed.description = "{0} removed the birthday {1} role from {2}".format(ctx.author.name, gender, birthdayx.name)
-            birthday_embed.title = "Birthday {0} role removed".format(gender.title())
+        await asyncio.sleep(64800)
+        if birthday_role in birthdayboy.roles:
+            await birthdayboy.remove_roles(birthday_role,reason="Responsible user: {0}".format(ctx.author.name))
+            birthday_embed.description = "{0} removed the birthday boy role from {1}".format(ctx.author.name,birthdayboy.name)
+            birthday_embed.title = "Birthday boy role removed"
             await log_channel.send(birthday_embed)
+
 
 @client.command(name='boosters')
 @commands.cooldown(1,15,commands.BucketType.channel)
 async def boosters(ctx):
     home_server_info = client.get_guild(home_server_ID)
     boosters_list = home_server_info.premium_subscribers
-    # Sorts boosters from oldest to most recent
-    boosters_list.sort(key=lambda b: b.premium_since) 
+    boosters_list.sort(key=lambda b: b.premium_since) # Sorts boosters from oldest to most recent
     booster_embed = discord.Embed(title="There are currently {0} people boosting the server. Current tier: {1}".format(home_server_info.premium_subscription_count, home_server_info.premium_tier),timestamp=datetime.datetime.utcnow(),color=discord.Colour.blue())
     booster_embed.set_footer(text="queried by {0}".format(ctx.author.name),icon_url=ctx.author.avatar_url)
     booster_embed.set_author(name=ctx.guild.name,icon_url=ctx.guild.icon_url)
@@ -263,10 +261,10 @@ async def uptime(ctx):
     uptime_embed = discord.Embed(timestamp=datetime.datetime.utcnow(),color=random.choice(colors))
     uptime_embed.set_author(name=client.user.name, icon_url=client.user.avatar_url)
     uptime_embed.set_footer(text="queried by {0}".format(ctx.author.name),icon_url=ctx.author.avatar_url)
-    uptime_embed.add_field(name="Current uptime",value="{0} days {1} hours {2} minutes {3} seconds".format(uptime_end.days,uptime_end.seconds//3600,(uptime_end.seconds//60)%60,uptime_end.seconds%60))
+    uptime_embed.add_field(name="Current uptime",value="{0.days} days {1} hours {2} minutes".format(uptime_end,uptime_end.seconds//3600,(uptime_end.seconds//60)%60)) # Fix seconds
     await ctx.send(embed=uptime_embed)
     logging.info("{0.author.name} ({0.author.id} used uptime command in {0.channel.name} ({0.channel.id}))".format(ctx))
-    
+
 
 @client.command(name='github')
 @commands.cooldown(1,10,commands.BucketType.user)
@@ -278,12 +276,113 @@ async def github(ctx):
     await ctx.send(embed=github_embed)
 
 
-# Convert Input to Day/Days string
-def number_to_text(x, suffix):
-    x_text = "{0} {1}".format(x, suffix)
-    if(x != 1):
-        x_text += "s"
-    return x_text
+@client.event
+async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
+
+    if payload.member == client.user: # Ignores the bots own messages
+        return
+
+    if payload.message_id != client.bot_emergency_message.id: # Ignores the reaction if it's not a reaction to the bot msg
+        return
+
+    if payload.member.id == client.emergency_caller_object.author.id:
+        return
+
+    guild = client.get_guild(payload.guild_id)
+    log_channel = client.get_channel(log_channel_ID) # #logs channel
+    emergency_channel = guild.get_channel(client.emergency_caller_object.channel.id)
+    verified_role_object = guild.get_role(verified_role)
+
+
+    if guild is None:
+        # Check if we're still in the guild and it's cached
+        return
+
+    if (payload.emoji.name != "✅") and (payload.emoji.name != "❌"): # Ignores any emoji that do not correspond to these two
+        return
+
+
+    if payload.member.top_role.id == verified_role_object.id: # Ignores the users reaction if the user is not above verified
+        return
+
+
+
+    if payload.emoji.name == '✅':
+        client.approved_list.append(payload.user_id)
+        log_embed = discord.Embed(description="{0.mention} has approved emergency request {1} ({2}/{3})".format(payload.member,client.bot_emergency_message.id,len(client.approved_list),emergency_request_approval_threshold),timestamp=datetime.datetime.utcnow(),color=discord.Colour.green())
+        log_embed.add_field(name="Link to message",value="https://discord.com/channels/{0.id}/{1}/{2}".format(guild,client.emergency_caller_object.channel.id,client.bot_emergency_message.id))
+        await log_channel.send(embed=log_embed)
+        logging.info("{0.mention} ({0.id}) has approved emergency request {1}".format(payload.member,client.bot_emergency_message.id))
+        await client.bot_emergency_message.edit(content="An emergency has been called by {0}.\nVerification is needed by at least {2} other members of sudo level 1 or higher to validate that this is indeed an emergency." \
+                                          " If you're sudo 1 or above and deem this an emergency, react with the ✅ emoji. If this does not qualify as an emergency, react with ❌. \n \n" \
+                                          "Approved: {1}/{2} \n \n Denied: {3}/{4}".format(client.emergency_caller_object.author.mention,len(client.approved_list),emergency_request_approval_threshold,len(client.denied_list),emergency_request_deny_threshold))
+
+        # Threshold reached for emergency approval, emergency approved
+        if len(client.approved_list) == emergency_request_approval_threshold:
+            emergency_role_object = guild.get_role(emergency_role_id)
+            await emergency_channel.send("The emergency called by {0.author.mention} has been approved.\n \nLink to message: " \
+                                            "https://discord.com/channels/{1.id}/{2}/{3} \n \n {4.mention}".format(client.emergency_caller_object,guild,client.emergency_caller_object.channel.id,client.bot_emergency_message.id,emergency_role_object))
+            cleanup_emergency()
+
+
+
+    if payload.emoji.name == '❌':
+        client.denied_list.append(payload.user_id)
+        log_embed = discord.Embed(description="{0.mention} has denied emergency request {1} ({2}/{3})".format(payload.member,client.bot_emergency_message.id,len(client.denied_list),emergency_request_deny_threshold),timestamp=datetime.datetime.utcnow(),color=discord.Colour.green())
+        log_embed.add_field(name="Link to message",value="https://discord.com/channels/{0.id}/{1}/{2}".format(guild,client.emergency_caller_object.channel.id,client.bot_emergency_message.id))
+        await log_channel.send(embed=log_embed)
+        logging.info("{0.mention} ({0.id}) has denied emergency request {1}".format(payload.member,client.bot_emergency_message.id))
+        await client.bot_emergency_message.edit(content="An emergency has been called by {0}.\nVerification is needed by at least {2} other members of sudo level 1 or higher to validate that this is indeed an emergency." \
+                                          " If you're sudo 1 or above and deem this an emergency, react with the ✅ emoji. If this does not qualify as an emergency, react with ❌. \n \n" \
+                                          "Approved: {1}/{2} \n \n Denied: {3}/{4}".format(client.emergency_caller_object.author.mention,len(client.approved_list),emergency_request_approval_threshold,len(client.denied_list),emergency_request_deny_threshold))
+
+        # Threshold reached for emergency denial, emergency denied
+        if len(client.denied_list) == emergency_request_deny_threshold:
+            await emergency_channel.send("{0.author.mention}, your emergency has been denied. Reminder that the emergency ping is reserved for"
+                                         " business production issues that are extremely time sensitive, not for homework or any other non-emergency "
+                                         "issue.".format(client.emergency_caller_object))
+            cleanup_emergency()
+
+
+
+
+@client.command(name='emergency')
+@commands.cooldown(1,120,commands.BucketType.guild)
+@commands.has_role(verified_role)
+@commands.check(ontopic)
+@commands.guild_only()
+async def emergency(ctx):
+
+    client.emergency_caller_object = ctx
+    guild = client.get_guild(ctx.guild.id)
+    log_channel = guild.get_channel(log_channel_ID)
+    if client.emergency_active == True:
+        await ctx.channel.send("There is already an emergency active. To clear it, ask a mod or <@{0}> to type `{4}clearemergency` or deny/approve the existing one." \
+                                "\n \n Link to the current emergency: https://discord.com/channels/{1.id}/{2}/{3}".format(moderator_mail,guild,client.emergency_caller_object.channel.id,client.bot_emergency_message.id,prefix))
+        return
+
+    client.emergency_active = True
+    client.bot_emergency_message = await ctx.send(("An emergency has been called by {0}.\nVerification is needed by at least {2} other members of sudo level 1 or higher to validate that this is indeed an emergency." \
+                                            " If you're sudo 1 or above and deem this an emergency, react with the ✅ emoji. If this does not qualify as an emergency, react with ❌. \n \n" \
+                                            "Approved: {1}/{2} \n \n Denied: {3}/{4}").format(client.emergency_caller_object.author.mention,len(client.approved_list),emergency_request_approval_threshold,len(client.denied_list),emergency_request_deny_threshold))
+    await client.bot_emergency_message.add_reaction('✅')
+    await client.bot_emergency_message.add_reaction('❌')
+    emergency_embed = discord.Embed(title="Emergency called",timestamp=datetime.datetime.utcnow(),color=random.choice(colors))
+    emergency_embed.description = "{0.author.mention} ({0.author.id}) used the emergency command in {0.channel.name} (<#{0.channel.id}>))".format(ctx)
+    emergency_embed.add_field(name="Link to message",value="https://discord.com/channels/{0.id}/{1}/{2}".format(guild,client.emergency_caller_object.channel.id,client.bot_emergency_message.id))
+    await log_channel.send(embed=emergency_embed)
+
+
+
+@client.command(name='clearemergency')
+@commands.has_any_role(*moderator_role_IDs)
+async def clearemergency(ctx):
+    if client.emergency_active == True:
+        client.emergency_active = False
+        await ctx.channel.send("The current emergency has been cancelled. The emergency command can now be called, assuming it is off cooldown (2 mins).")
+    elif client.emergency_active == False:
+        await ctx.channel.send("There is currently no active emergency.")
+
 
 
 client.run(token)

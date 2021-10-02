@@ -8,6 +8,10 @@ Users with a minimum account age can send it the message "verify" and it will ve
 
 Informs users below the specified minimum account age to message Moderator Mail to get verified if they attempt to verify with the bot.
 
+Pinging a role destined for emergencies only with a certain amount of reactions needed from people with a top role above "verified"
+
+PM people who boost the server with a thank you message
+
 
 ### Potential future features
 

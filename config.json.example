@@ -12,4 +12,8 @@
     "moderator_role_IDs": ["Enter the role IDs", "of your mod roles", "here"],
     "birthday_role_ID": "ID of birthday role",
     "verified_role": "ID of the role that the bot gives upon verification"
+    "emergency_request_approval_threshold": "Amount of approvals needed to send an emergency ping",
+    "emergency_request_deny_threshold": "Amount of disapprovals needed to deny an emergency ping",
+    "ontopic_category_id": "ID of the category where emergency pings can be used",
+    "emergency_role_id": "Role ID of the emergency role to ping"
 }
