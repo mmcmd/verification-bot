@@ -15,5 +15,8 @@
     "emergency_request_approval_threshold": "Amount of approvals needed to send an emergency ping",
     "emergency_request_deny_threshold": "Amount of disapprovals needed to deny an emergency ping",
     "ontopic_category_id": "ID of the category where emergency pings can be used",
-    "emergency_role_id": "Role ID of the emergency role to ping"
+    "emergency_role_id": "Role ID of the emergency role to ping",
+    "emergency_role_reminder": "Amount of seconds between each reminder posted in chat that an emergency is active while an emergency is active"
+    "emergency_role_timeout": "Amount of times an emergency reminder is sent out (every 5 mins) before an emergency is cancelled (ex: 3 = emergency would last 15 mins)",
+    "emergency_top_role_bypass_id": "ID of a role where calling an emergency does not require approval"
 }

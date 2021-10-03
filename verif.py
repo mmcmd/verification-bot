@@ -52,6 +52,11 @@ ontopic_category_id = int(config_json["ontopic_category_id"])
 
 emergency_role_id = int(config_json["emergency_role_id"])
 
+emergency_role_reminder = int(config_json["emergency_role_reminder"])
+
+emergency_role_timeout = int(config_json["emergency_role_timeout"])
+
+emergency_top_role_bypass_id = int(config_json["emergency_top_role_bypass_id"])
 
 birthday_role_id = int(config_json["birthday_role_ID"])
 
@@ -88,14 +93,18 @@ def cleanup_emergency(): # Function to cleanup once an emergency is over
     client.emergency_active = None
     client.emergency_caller_object = None
     client.bot_emergency_message = None
+    client.bot_emergency_message_link = None
+    client.bot_emergency_reminder_count = 0
 
 
-# Variables for the emergency command to be used across multiple funcctions
+# Variables for the emergency command to be used across multiple functions
 client.emergency_active = None # Boolean for knowing if there is an active emergency request
 client.approved_list = [] # List of people who have approved the emergency
 client.denied_list = [] # List of people who have denied the emergency
 client.emergency_caller_object = None # Bot variable that tracks the object of whoever sent the !emergency message
 client.bot_emergency_message = None # Object for the emergency that the bot sends
+client.bot_emergency_message_link = None
+client.bot_emergency_reminder_count = 0
 
 
 
@@ -309,8 +318,8 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
 
     if payload.emoji.name == '✅':
         client.approved_list.append(payload.user_id)
-        log_embed = discord.Embed(description="{0.mention} has approved emergency request {1} ({2}/{3})".format(payload.member,client.bot_emergency_message.id,len(client.approved_list),emergency_request_approval_threshold),timestamp=datetime.datetime.utcnow(),color=discord.Colour.green())
-        log_embed.add_field(name="Link to message",value="https://discord.com/channels/{0.id}/{1}/{2}".format(guild,client.emergency_caller_object.channel.id,client.bot_emergency_message.id))
+        log_embed = discord.Embed(title='Emergency request approved',description="{0.mention} has approved emergency request {1} ({2}/{3})".format(payload.member,client.bot_emergency_message.id,len(client.approved_list),emergency_request_approval_threshold),timestamp=datetime.datetime.utcnow(),color=discord.Colour.green())
+        log_embed.add_field(name="Link to message",value=client.bot_emergency_message_link)
         await log_channel.send(embed=log_embed)
         logging.info("{0.mention} ({0.id}) has approved emergency request {1}".format(payload.member,client.bot_emergency_message.id))
         await client.bot_emergency_message.edit(content="An emergency has been called by {0}.\nVerification is needed by at least {2} other members of sudo level 1 or higher to validate that this is indeed an emergency." \
@@ -328,8 +337,8 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
 
     if payload.emoji.name == '❌':
         client.denied_list.append(payload.user_id)
-        log_embed = discord.Embed(description="{0.mention} has denied emergency request {1} ({2}/{3})".format(payload.member,client.bot_emergency_message.id,len(client.denied_list),emergency_request_deny_threshold),timestamp=datetime.datetime.utcnow(),color=discord.Colour.green())
-        log_embed.add_field(name="Link to message",value="https://discord.com/channels/{0.id}/{1}/{2}".format(guild,client.emergency_caller_object.channel.id,client.bot_emergency_message.id))
+        log_embed = discord.Embed(title='Emergency request denied',description="{0.mention} has denied emergency request {1} ({2}/{3})".format(payload.member,client.bot_emergency_message.id,len(client.denied_list),emergency_request_deny_threshold),timestamp=datetime.datetime.utcnow(),color=discord.Colour.green())
+        log_embed.add_field(name="Link to message",value=client.bot_emergency_message_link)
         await log_channel.send(embed=log_embed)
         logging.info("{0.mention} ({0.id}) has denied emergency request {1}".format(payload.member,client.bot_emergency_message.id))
         await client.bot_emergency_message.edit(content="An emergency has been called by {0}.\nVerification is needed by at least {2} other members of sudo level 1 or higher to validate that this is indeed an emergency." \
@@ -356,9 +365,22 @@ async def emergency(ctx):
     client.emergency_caller_object = ctx
     guild = client.get_guild(ctx.guild.id)
     log_channel = guild.get_channel(log_channel_ID)
+
+
+    for role in ctx.author.roles:
+        if emergency_top_role_bypass_id == role.id:
+            emergency_role_object = ctx.guild.get_role(emergency_role_id)
+            await ctx.send("An emergency is being called by {0.author.mention}.\n \n {1.mention}".format(ctx,emergency_role_object))
+            emergency_embed = discord.Embed(title="Emergency called",timestamp=datetime.datetime.utcnow(),color=random.choice(colors))
+            emergency_embed.description = "{0.author.mention} ({0.author.id}) used the emergency command in {0.channel.name} (<#{0.channel.id}>))".format(ctx)
+            emergency_embed.add_field(name="Link to message",value="https://discord.com/channels/{0.id}/{1}/{2}".format(guild,ctx.channel.id,ctx.message.id))
+            await log_channel.send(embed=emergency_embed)
+            return
+
+
     if client.emergency_active == True:
-        await ctx.channel.send("There is already an emergency active. To clear it, ask a mod or <@{0}> to type `{4}clearemergency` or deny/approve the existing one." \
-                                "\n \n Link to the current emergency: https://discord.com/channels/{1.id}/{2}/{3}".format(moderator_mail,guild,client.emergency_caller_object.channel.id,client.bot_emergency_message.id,prefix))
+        await ctx.channel.send("There is already an emergency active. To clear it, ask a mod or <@{0}> to type `{2}clearemergency` or deny/approve the existing one." \
+                                "\n \n Link to the current emergency: {1}".format(moderator_mail,client.bot_emergency_message_link,prefix))
         return
 
     client.emergency_active = True
@@ -367,10 +389,22 @@ async def emergency(ctx):
                                             "Approved: {1}/{2} \n \n Denied: {3}/{4}").format(client.emergency_caller_object.author.mention,len(client.approved_list),emergency_request_approval_threshold,len(client.denied_list),emergency_request_deny_threshold))
     await client.bot_emergency_message.add_reaction('✅')
     await client.bot_emergency_message.add_reaction('❌')
+    client.bot_emergency_message_link = "https://discord.com/channels/{0.id}/{1}/{2}".format(guild,client.emergency_caller_object.channel.id,client.bot_emergency_message.id)
     emergency_embed = discord.Embed(title="Emergency called",timestamp=datetime.datetime.utcnow(),color=random.choice(colors))
     emergency_embed.description = "{0.author.mention} ({0.author.id}) used the emergency command in {0.channel.name} (<#{0.channel.id}>))".format(ctx)
-    emergency_embed.add_field(name="Link to message",value="https://discord.com/channels/{0.id}/{1}/{2}".format(guild,client.emergency_caller_object.channel.id,client.bot_emergency_message.id))
+    emergency_embed.add_field(name="Link to message",value="{0}".format(client.bot_emergency_message_link))
     await log_channel.send(embed=emergency_embed)
+    while client.emergency_active == True:
+        await asyncio.sleep(emergency_role_reminder)
+        if client.bot_emergency_reminder_count >= emergency_role_timeout:
+            await ctx.channel.send("The emergency that was called has been cancelled (timed out). Link to emergency request: {0}".format(client.bot_emergency_message_link))
+            cleanup_emergency()
+            return
+        if client.emergency_active == True:
+            client.bot_emergency_reminder_count+=1
+            await ctx.channel.send("There is currently an emergency awaiting approval. Link: {0} Please approve/deny it if you can.".format(client.bot_emergency_message_link))
+        else:
+            return
 
 
 
