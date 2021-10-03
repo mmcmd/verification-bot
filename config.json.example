@@ -17,6 +17,6 @@
     "ontopic_category_id": "ID of the category where emergency pings can be used",
     "emergency_role_id": "Role ID of the emergency role to ping",
     "emergency_role_reminder": "Amount of seconds between each reminder posted in chat that an emergency is active while an emergency is active"
-    "emergency_role_timeout": "Amount of times an emergency reminder is sent out (every 5 mins) before an emergency is cancelled (ex: 3 = emergency would last 15 mins)",
+    "emergency_role_timeout": "Amount of times an emergency reminder is sent out (emergency_role_reminder * emergency_role_timeout) before an emergency is cancelled (ex: 3 = emergency would last 3*emergency_role_reminder seconds)",
     "emergency_top_role_bypass_id": "ID of a role where calling an emergency does not require approval"
 }
