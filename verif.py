@@ -382,11 +382,15 @@ async def emergency(ctx):
     guild = client.get_guild(ctx.guild.id)
     log_channel = guild.get_channel(log_channel_ID)
     emergency_role_object = ctx.guild.get_role(emergency_role_id)
-    emergency_top_role_bypass_object = []
-    for id in emergency_top_role_bypass_id:
-        emergency_top_role_bypass_object.append(ctx.guild.get_role(emergency_top_role_bypass_id))
 
-    if emergency_top_role_bypass_object in ctx.author.roles:
+    bypass_roles = [ctx.guild.get_role(role_id) for role_id in emergency_top_role_bypass_id]  # Get role objects of the roles that bypass approval
+
+    if client.emergency_active == True:
+        await ctx.channel.send("There is already an emergency active. To clear it, ask a mod or <@{0}> to type `{2}clearemergency` or deny/approve the existing one." \
+                                "\n \n Link to the current emergency: {1}".format(moderator_mail,client.bot_emergency_message_link,prefix))
+        return
+
+    if any(role in ctx.author.roles for role in bypass_roles):  # Check for any matching role
         await ctx.send("An emergency is being called by {0.author.mention}.\n \n {1.mention}".format(ctx,emergency_role_object))
         emergency_embed = discord.Embed(title="Emergency called",timestamp=datetime.datetime.utcnow(),color=random.choice(colors))
         emergency_embed.description = "{0.author.mention} ({0.author.id}) used the emergency command in {0.channel.name} (<#{0.channel.id}>))".format(ctx)
@@ -394,11 +398,6 @@ async def emergency(ctx):
         await log_channel.send(embed=emergency_embed)
         return
 
-
-    if client.emergency_active == True:
-        await ctx.channel.send("There is already an emergency active. To clear it, ask a mod or <@{0}> to type `{2}clearemergency` or deny/approve the existing one." \
-                                "\n \n Link to the current emergency: {1}".format(moderator_mail,client.bot_emergency_message_link,prefix))
-        return
 
     client.emergency_active = True
     client.bot_emergency_message = await ctx.send(("An emergency has been called by {0}.\nVerification is needed by at least {2} other members of sudo level 1 or higher to validate that this is indeed an emergency." \
