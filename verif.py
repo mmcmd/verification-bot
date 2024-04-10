@@ -380,17 +380,15 @@ async def emergency(ctx):
     client.emergency_caller_object = ctx
     guild = client.get_guild(ctx.guild.id)
     log_channel = guild.get_channel(log_channel_ID)
+    emergency_role_object = ctx.guild.get_role(emergency_role_id)
 
-
-    for role in ctx.author.roles:
-        if emergency_top_role_bypass_id == role.id:
-            emergency_role_object = ctx.guild.get_role(emergency_role_id)
-            await ctx.send("An emergency is being called by {0.author.mention}.\n \n {1.mention}".format(ctx,emergency_role_object))
-            emergency_embed = discord.Embed(title="Emergency called",timestamp=datetime.datetime.utcnow(),color=random.choice(colors))
-            emergency_embed.description = "{0.author.mention} ({0.author.id}) used the emergency command in {0.channel.name} (<#{0.channel.id}>))".format(ctx)
-            emergency_embed.add_field(name="Link to message",value="https://discord.com/channels/{0.id}/{1}/{2}".format(guild,ctx.channel.id,ctx.message.id))
-            await log_channel.send(embed=emergency_embed)
-            return
+    if emergency_role_object in ctx.author.roles:
+        await ctx.send("An emergency is being called by {0.author.mention}.\n \n {1.mention}".format(ctx,emergency_role_object))
+        emergency_embed = discord.Embed(title="Emergency called",timestamp=datetime.datetime.utcnow(),color=random.choice(colors))
+        emergency_embed.description = "{0.author.mention} ({0.author.id}) used the emergency command in {0.channel.name} (<#{0.channel.id}>))".format(ctx)
+        emergency_embed.add_field(name="Link to message",value="https://discord.com/channels/{0.id}/{1}/{2}".format(guild,ctx.channel.id,ctx.message.id))
+        await log_channel.send(embed=emergency_embed)
+        return
 
 
     if client.emergency_active == True:
