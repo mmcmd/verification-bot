@@ -291,12 +291,13 @@ async def uptime(ctx):
 
 
 @client.command(name='github')
-@commands.cooldown(1,10,commands.BucketType.user)
+@commands.cooldown(1, 10, commands.BucketType.user)
 async def github(ctx):
-    github_embed = discord.Embed(timestamp=datetime.datetime.utcnow(),colors=random.choice(colors))
-    github_embed.set_author(name="github.com/mmcmd",icon_url="https://avatars1.githubusercontent.com/u/36875145")
-    github_embed.set_footer(text="queried by {0}".format(ctx.author.name),icon_url=ctx.author.avatar.url)
-    github_embed.add_field(name="The source code of this bot can be found at:",value="https://github.com/mmcmd/verification-bot")
+    github_embed = discord.Embed(timestamp=datetime.datetime.utcnow())  # Create the embed without the 'colors' argument
+    github_embed.color = random.choice(colors)  # Set the color after creation
+    github_embed.set_author(name="github.com/mmcmd", icon_url="https://avatars1.githubusercontent.com/u/36875145")
+    github_embed.set_footer(text="queried by {0}".format(ctx.author.name), icon_url=ctx.author.avatar.url)
+    github_embed.add_field(name="The source code of this bot can be found at:", value="https://github.com/mmcmd/verification-bot")
     await ctx.send(embed=github_embed)
 
 
