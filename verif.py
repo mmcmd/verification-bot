@@ -382,7 +382,9 @@ async def emergency(ctx):
     guild = client.get_guild(ctx.guild.id)
     log_channel = guild.get_channel(log_channel_ID)
     emergency_role_object = ctx.guild.get_role(emergency_role_id)
-    emergency_top_role_bypass_object = ctx.guild.get_role(emergency_top_role_bypass_id)
+    emergency_top_role_bypass_object = []
+    for id in emergency_top_role_bypass_id:
+        emergency_top_role_bypass_object.Append(ctx.guild.get_role(emergency_top_role_bypass_id))
 
     if emergency_top_role_bypass_object in ctx.author.roles:
         await ctx.send("An emergency is being called by {0.author.mention}.\n \n {1.mention}".format(ctx,emergency_role_object))
