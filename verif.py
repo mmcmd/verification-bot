@@ -6,6 +6,7 @@ import asyncio
 import datetime
 from discord.ext import commands
 import json
+import subprocess
 
 from discord.partial_emoji import PartialEmoji
 
@@ -56,9 +57,12 @@ emergency_role_reminder = int(config_json["emergency_role_reminder"])
 
 emergency_role_timeout = int(config_json["emergency_role_timeout"])
 
-emergency_top_role_bypass_id = int(config_json["emergency_top_role_bypass_id"])
+emergency_top_role_bypass_id = config_json["emergency_top_role_bypass_id"]
+emergency_top_role_bypass_id = [int(m) for m in emergency_top_role_bypass_id] # Making sure they are ints
 
 birthday_role_id = int(config_json["birthday_role_ID"])
+
+irc_relay_container_id = str(config_json["irc_relay_id"])
 
 colors = [discord.Colour.purple(), discord.Colour.blue(), discord.Colour.red(), discord.Colour.green(), discord.Colour.orange()] # Discord colors for embedding
 
@@ -416,6 +420,24 @@ async def clearemergency(ctx):
         await ctx.channel.send("The current emergency has been cancelled. The emergency command can now be called, assuming it is off cooldown (2 mins).")
     elif client.emergency_active == False:
         await ctx.channel.send("There is currently no active emergency.")
+
+
+@client.command(name='irc')
+@commands.has_any_role(*moderator_role_IDs)
+async def docker_command(ctx, action):
+    allowed_actions = ['stop', 'restart', 'start']
+    if action not in allowed_actions:
+        await ctx.send("Invalid action. Please use one of: stop, restart, start")
+        return
+
+    command = f'docker {action} {irc_relay_container_id}'
+
+    try:
+        output = subprocess.check_output(command, shell=True, text=True)
+        await ctx.send(f"Docker container {action}ed successfully:`{output}`")
+    except subprocess.CalledProcessError as e:
+        await ctx.send(f"Error executing docker command: {e}")
+
 
 
 
