@@ -135,14 +135,14 @@ async def on_message(message):
                 if account_age_days < verification_requirement_message:
                     await message.channel.send("Sorry, your account must be 5 days or older in order to get verified. Please either verify with your phone number or contact the mod team through <@%s> (Moderator mail, top of the member list) for manual verification if you're unable to verify with a phone number."% str(moderator_mail))
                     logembedfail = discord.Embed(description='<@%d> (%s) attempted to get manually verified, however his account age is too low (%d days)'% (int(author_id), str(author_id), account_age_days),timestamp=datetime.datetime.utcnow(),color=discord.Colour.red())
-                    logembedfail.set_author(name=message.author.name, icon_url=message.author.avatar_url)
+                    logembedfail.set_author(name=message.author.name, icon_url=message.author.avatar.url)
                     logging.info(message.author.name + "(%d) attempted to get manually verified, but his account age was too low (%d days)"% (author_id, account_age_days))
                     await log_channel.send(embed=logembedfail)
                     return
                 elif account_age_days >= verification_requirement_message:
                     await home_server_info.add_roles(home_server_verified_role, reason="User has manually been verified with Verification bot. Account age: %d days" % account_age_days) # Adds unverified role to the user
                     log_embed = discord.Embed(description="<@%d> has been verified"% author_id,timestamp=datetime.datetime.utcnow(),color=discord.Colour.green())
-                    log_embed.set_author(name=message.author.name, icon_url=message.author.avatar_url)
+                    log_embed.set_author(name=message.author.name, icon_url=message.author.avatar.url)
                     await log_channel.send(embed=log_embed)
                     await message.channel.send("You have been verified. Please remember to read the <#%s>. You may also assign yourself roles in <#%s>. If you ever have an issue, do not hesitate to message <@%s> (Moderator Mail, top of the member list)"% (str(448941767325253632),str(516816975427797012),str(moderator_mail)))
                     await message.add_reaction('✅')
@@ -170,7 +170,7 @@ async def on_member_join(member):
     if account_age_days > verification_requirement_join:
         await home_server_info.add_roles(home_server_verified_role, reason="Account age is over 3 months (%d days), user has automatically been verified."% account_age_days) # Adds unverified role to the user
         log_embed = discord.Embed(description="<@%d> has been verified automatically because his account age is over 3 months (%d days)"% (member_id,account_age_days),timestamp=datetime.datetime.utcnow(),color=discord.Colour.green())
-        log_embed.set_author(name=member.id, icon_url=member.avatar_url)
+        log_embed.set_author(name=member.id, icon_url=member.avatar.url)
         await log_channel.send(embed=log_embed)
         logging.info("%s (%d) has been verified automatically because his account age is over 3 months (%d days)"% (str(member.name),member_id,account_age_days))
         return
@@ -189,7 +189,7 @@ async def on_member_update(member,updatedmember):
             home_server = client.get_guild(home_server_ID)
             log_channel_unboost = client.get_channel(unboost_channel_ID) # #logs channel
             log_embed_unboost = discord.Embed(description="{0} ({1}) unboosted the server.".format(member.mention,member.id),timestamp=datetime.datetime.utcnow(),color=discord.Colour.red())
-            log_embed_unboost.set_author(name=member.name, icon_url=member.avatar_url)
+            log_embed_unboost.set_author(name=member.name, icon_url=member.avatar.url)
             await log_channel_unboost.send(embed=log_embed_unboost)
             for role in colored_roles:
                 role = home_server.get_role(role)
@@ -232,8 +232,8 @@ async def birthday(ctx, birthdayboy: discord.Member):
     birthday_role = home_server_info.get_role(birthday_role_id)
     log_channel = home_server_info.get_channel(log_channel_ID)
     birthday_embed = discord.Embed(color=discord.Colour.purple(),timestamp=datetime.datetime.utcnow())
-    birthday_embed.set_author(name=birthdayboy.name,icon_url=birthdayboy.avatar_url)
-    birthday_embed.set_footer(text="Responsible user: {0}".format(ctx.author.name),icon_url=ctx.author.avatar_url)
+    birthday_embed.set_author(name=birthdayboy.name,icon_url=birthdayboy.avatar.url)
+    birthday_embed.set_footer(text="Responsible user: {0}".format(ctx.author.name),icon_url=ctx.author.avatar.url)
     if birthday_role in birthdayboy.roles:
         await birthdayboy.remove_roles(birthday_role,reason="Responsible user: %s" % ctx.author.name)
         birthday_embed.description = "{0} removed the birthday boy role from {1}".format(ctx.author.name,birthdayboy.name)
@@ -254,17 +254,28 @@ async def birthday(ctx, birthdayboy: discord.Member):
 
 
 @client.command(name='boosters')
-@commands.cooldown(1,15,commands.BucketType.channel)
+@commands.cooldown(1, 15, commands.BucketType.channel)
 async def boosters(ctx):
     home_server_info = client.get_guild(home_server_ID)
     boosters_list = home_server_info.premium_subscribers
-    boosters_list.sort(key=lambda b: b.premium_since) # Sorts boosters from oldest to most recent
-    booster_embed = discord.Embed(title="There are currently {0} people boosting the server. Current tier: {1}".format(home_server_info.premium_subscription_count, home_server_info.premium_tier),timestamp=datetime.datetime.utcnow(),color=discord.Colour.blue())
-    booster_embed.set_footer(text="queried by {0}".format(ctx.author.name),icon_url=ctx.author.avatar_url)
-    booster_embed.set_author(name=ctx.guild.name,icon_url=ctx.guild.icon_url)
+    boosters_list.sort(key=lambda b: b.premium_since)  # Sorts boosters from oldest to most recent
+    booster_embed = discord.Embed(
+        title="There are currently {0} people boosting the server. Current tier: {1}".format(
+            home_server_info.premium_subscription_count, home_server_info.premium_tier
+        ),
+        timestamp=datetime.datetime.utcnow(),
+        color=discord.Colour.blue()
+    )
+    booster_embed.set_footer(text="queried by {0}".format(ctx.author.name), icon_url=ctx.author.avatar.url)  # Corrected line
+    booster_embed.set_author(name=ctx.guild.name, icon_url=ctx.guild.icon_url)
     for booster in boosters_list:
-        booster_embed.add_field(name="{0}, joined {1}".format(booster.name,booster.joined_at.strftime("%b %d %Y")),value="{0} - Boosting since: {1}".format(booster.mention,booster.premium_since.strftime("%b %d %Y")),inline=False)
+        booster_embed.add_field(
+            name="{0}, joined {1}".format(booster.name, booster.joined_at.strftime("%b %d %Y")),
+            value="{0} - Boosting since: {1}".format(booster.mention, booster.premium_since.strftime("%b %d %Y")),
+            inline=False
+        )
     await ctx.send(embed=booster_embed)
+
 
 
 @client.command(name='uptime')
@@ -272,8 +283,8 @@ async def boosters(ctx):
 async def uptime(ctx):
     uptime_end = datetime.datetime.utcnow() - uptime_start
     uptime_embed = discord.Embed(timestamp=datetime.datetime.utcnow(),color=random.choice(colors))
-    uptime_embed.set_author(name=client.user.name, icon_url=client.user.avatar_url)
-    uptime_embed.set_footer(text="queried by {0}".format(ctx.author.name),icon_url=ctx.author.avatar_url)
+    uptime_embed.set_author(name=client.user.name, icon_url=client.user.avatar.url)
+    uptime_embed.set_footer(text="queried by {0}".format(ctx.author.name),icon_url=ctx.author.avatar.url)
     uptime_embed.add_field(name="Current uptime",value="{0.days} days {1} hours {2} minutes".format(uptime_end,uptime_end.seconds//3600,(uptime_end.seconds//60)%60)) # Fix seconds
     await ctx.send(embed=uptime_embed)
     logging.info("{0.author.name} ({0.author.id} used uptime command in {0.channel.name} ({0.channel.id}))".format(ctx))
@@ -284,7 +295,7 @@ async def uptime(ctx):
 async def github(ctx):
     github_embed = discord.Embed(timestamp=datetime.datetime.utcnow(),colors=random.choice(colors))
     github_embed.set_author(name="github.com/mmcmd",icon_url="https://avatars1.githubusercontent.com/u/36875145")
-    github_embed.set_footer(text="queried by {0}".format(ctx.author.name),icon_url=ctx.author.avatar_url)
+    github_embed.set_footer(text="queried by {0}".format(ctx.author.name),icon_url=ctx.author.avatar.url)
     github_embed.add_field(name="The source code of this bot can be found at:",value="https://github.com/mmcmd/verification-bot")
     await ctx.send(embed=github_embed)
 
