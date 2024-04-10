@@ -382,8 +382,9 @@ async def emergency(ctx):
     guild = client.get_guild(ctx.guild.id)
     log_channel = guild.get_channel(log_channel_ID)
     emergency_role_object = ctx.guild.get_role(emergency_role_id)
+    emergency_top_role_bypass_id = ctx.guild.get_role(emergency_top_role_bypass_id)
 
-    if emergency_role_object in ctx.author.roles:
+    if emergency_top_role_bypass_id in ctx.author.roles:
         await ctx.send("An emergency is being called by {0.author.mention}.\n \n {1.mention}".format(ctx,emergency_role_object))
         emergency_embed = discord.Embed(title="Emergency called",timestamp=datetime.datetime.utcnow(),color=random.choice(colors))
         emergency_embed.description = "{0.author.mention} ({0.author.id}) used the emergency command in {0.channel.name} (<#{0.channel.id}>))".format(ctx)
