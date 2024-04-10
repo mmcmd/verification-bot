@@ -71,7 +71,7 @@ uptime_start = datetime.datetime.utcnow()
 
 
 # Enable intents
-intents = discord.Intents.default()
+intents = discord.Intents.all()
 intents.members = True
 
 
