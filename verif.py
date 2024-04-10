@@ -267,7 +267,7 @@ async def boosters(ctx):
         color=discord.Colour.blue()
     )
     booster_embed.set_footer(text="queried by {0}".format(ctx.author.name), icon_url=ctx.author.avatar.url)  # Corrected line
-    booster_embed.set_author(name=ctx.guild.name, icon_url=ctx.guild.icon_url)
+    booster_embed.set_author(name=ctx.guild.name, icon_url=ctx.guild.icon.url)
     for booster in boosters_list:
         booster_embed.add_field(
             name="{0}, joined {1}".format(booster.name, booster.joined_at.strftime("%b %d %Y")),
