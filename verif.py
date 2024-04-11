@@ -439,14 +439,14 @@ async def clearemergency(ctx):
 async def docker_command(ctx, action):
     allowed_actions = ['stop', 'restart', 'start']
     if action not in allowed_actions:
-        await ctx.send("Invalid action. Please use one of: stop, restart, start")
+        await ctx.send("Invalid action. Please use one of: `stop, restart, start`")
         return
 
     command = f'docker {action} {irc_relay_container_id}'
 
     try:
         output = subprocess.check_output(command, shell=True, text=True)
-        await ctx.send(f"Docker container {action}ed successfully:`{output}`")
+        await ctx.send(f"{action} successful on the docker container:`{output}`")
     except subprocess.CalledProcessError as e:
         await ctx.send(f"Error executing docker command: {e}")
 
