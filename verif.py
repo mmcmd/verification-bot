@@ -6,6 +6,7 @@ import asyncio
 import datetime
 from discord.ext import commands
 import json
+import subprocess
 
 from discord.partial_emoji import PartialEmoji
 
@@ -56,18 +57,21 @@ emergency_role_reminder = int(config_json["emergency_role_reminder"])
 
 emergency_role_timeout = int(config_json["emergency_role_timeout"])
 
-emergency_top_role_bypass_id = int(config_json["emergency_top_role_bypass_id"])
+emergency_top_role_bypass_id = config_json["emergency_top_role_bypass_id"]
+emergency_top_role_bypass_id = [int(m) for m in emergency_top_role_bypass_id] # Making sure they are ints
 
 birthday_role_id = int(config_json["birthday_role_ID"])
 
+irc_relay_container_id = str(config_json["irc_relay_id"])
+
 colors = [discord.Colour.purple(), discord.Colour.blue(), discord.Colour.red(), discord.Colour.green(), discord.Colour.orange()] # Discord colors for embedding
 
-uptime_start = datetime.datetime.utcnow()
+uptime_start = datetime.datetime.now(datetime.timezone.utc)
 
 
 
 # Enable intents
-intents = discord.Intents.default()
+intents = discord.Intents.all()
 intents.members = True
 
 
@@ -120,7 +124,7 @@ async def on_message(message):
         logging.info("Direct message received: %s - sent by %s (ID: %d)"% (message.content.lower(),message.author.name, message.author.id))
         if "verify" in message.content.lower() or "verified" in message.content.lower():
             author_id = int(message.author.id) # Author's ID
-            account_age = datetime.datetime.utcnow() - message.author.created_at # Subtracts current time with account creation date to get account age
+            account_age = datetime.datetime.now(datetime.timezone.utc) - message.author.created_at # Subtracts current time with account creation date to get account age
             account_age_days = account_age.days # Account age in days
             home_server = client.get_guild(home_server_ID) # Gets the guild
             log_channel = client.get_channel(log_channel_ID) # #logs channel
@@ -130,15 +134,15 @@ async def on_message(message):
             if home_server_top_role == "@everyone":
                 if account_age_days < verification_requirement_message:
                     await message.channel.send("Sorry, your account must be 5 days or older in order to get verified. Please either verify with your phone number or contact the mod team through <@%s> (Moderator mail, top of the member list) for manual verification if you're unable to verify with a phone number."% str(moderator_mail))
-                    logembedfail = discord.Embed(description='<@%d> (%s) attempted to get manually verified, however his account age is too low (%d days)'% (int(author_id), str(author_id), account_age_days),timestamp=datetime.datetime.utcnow(),color=discord.Colour.red())
-                    logembedfail.set_author(name=message.author.name, icon_url=message.author.avatar_url)
+                    logembedfail = discord.Embed(description='<@%d> (%s) attempted to get manually verified, however his account age is too low (%d days)'% (int(author_id), str(author_id), account_age_days),timestamp=datetime.datetime.now(datetime.timezone.utc),color=discord.Colour.red())
+                    logembedfail.set_author(name=message.author.name, icon_url=message.author.avatar.url)
                     logging.info(message.author.name + "(%d) attempted to get manually verified, but his account age was too low (%d days)"% (author_id, account_age_days))
                     await log_channel.send(embed=logembedfail)
                     return
                 elif account_age_days >= verification_requirement_message:
                     await home_server_info.add_roles(home_server_verified_role, reason="User has manually been verified with Verification bot. Account age: %d days" % account_age_days) # Adds unverified role to the user
-                    log_embed = discord.Embed(description="<@%d> has been verified"% author_id,timestamp=datetime.datetime.utcnow(),color=discord.Colour.green())
-                    log_embed.set_author(name=message.author.name, icon_url=message.author.avatar_url)
+                    log_embed = discord.Embed(description="<@%d> has been verified"% author_id,timestamp=datetime.datetime.now(datetime.timezone.utc),color=discord.Colour.green())
+                    log_embed.set_author(name=message.author.name, icon_url=message.author.avatar.url)
                     await log_channel.send(embed=log_embed)
                     await message.channel.send("You have been verified. Please remember to read the <#%s>. You may also assign yourself roles in <#%s>. If you ever have an issue, do not hesitate to message <@%s> (Moderator Mail, top of the member list)"% (str(448941767325253632),str(516816975427797012),str(moderator_mail)))
                     await message.add_reaction('✅')
@@ -157,7 +161,7 @@ async def on_message(message):
 @client.event
 async def on_member_join(member):
     member_id = int(member.id)
-    account_age = datetime.datetime.utcnow() - member.created_at # Subtracts current time with account creation date to get account age
+    account_age = datetime.datetime.now(datetime.timezone.utc) - member.created_at # Subtracts current time with account creation date to get account age
     account_age_days = account_age.days # Account age in days
     home_server = client.get_guild(home_server_ID) # Gets the guild
     log_channel = client.get_channel(log_channel_ID) # #logs channel
@@ -165,8 +169,8 @@ async def on_member_join(member):
     home_server_verified_role = home_server.get_role(verified_role) # The ID of the role that the bot gives in order for the person to be able to use the server
     if account_age_days > verification_requirement_join:
         await home_server_info.add_roles(home_server_verified_role, reason="Account age is over 3 months (%d days), user has automatically been verified."% account_age_days) # Adds unverified role to the user
-        log_embed = discord.Embed(description="<@%d> has been verified automatically because his account age is over 3 months (%d days)"% (member_id,account_age_days),timestamp=datetime.datetime.utcnow(),color=discord.Colour.green())
-        log_embed.set_author(name=member.id, icon_url=member.avatar_url)
+        log_embed = discord.Embed(description="<@%d> has been verified automatically because his account age is over 3 months (%d days)"% (member_id,account_age_days),timestamp=datetime.datetime.now(datetime.timezone.utc),color=discord.Colour.green())
+        log_embed.set_author(name=member.id, icon_url=member.avatar.url)
         await log_channel.send(embed=log_embed)
         logging.info("%s (%d) has been verified automatically because his account age is over 3 months (%d days)"% (str(member.name),member_id,account_age_days))
         return
@@ -184,8 +188,8 @@ async def on_member_update(member,updatedmember):
             logging.info("{0} ({1}) unboosted the server.".format(member.name,member_id))
             home_server = client.get_guild(home_server_ID)
             log_channel_unboost = client.get_channel(unboost_channel_ID) # #logs channel
-            log_embed_unboost = discord.Embed(description="{0} ({1}) unboosted the server.".format(member.mention,member.id),timestamp=datetime.datetime.utcnow(),color=discord.Colour.red())
-            log_embed_unboost.set_author(name=member.name, icon_url=member.avatar_url)
+            log_embed_unboost = discord.Embed(description="{0} ({1}) unboosted the server.".format(member.mention,member.id),timestamp=datetime.datetime.now(datetime.timezone.utc),color=discord.Colour.red())
+            log_embed_unboost.set_author(name=member.name, icon_url=member.avatar.url)
             await log_channel_unboost.send(embed=log_embed_unboost)
             for role in colored_roles:
                 role = home_server.get_role(role)
@@ -227,9 +231,9 @@ async def birthday(ctx, birthdayboy: discord.Member):
     home_server_info = client.get_guild(home_server_ID)
     birthday_role = home_server_info.get_role(birthday_role_id)
     log_channel = home_server_info.get_channel(log_channel_ID)
-    birthday_embed = discord.Embed(color=discord.Colour.purple(),timestamp=datetime.datetime.utcnow())
-    birthday_embed.set_author(name=birthdayboy.name,icon_url=birthdayboy.avatar_url)
-    birthday_embed.set_footer(text="Responsible user: {0}".format(ctx.author.name),icon_url=ctx.author.avatar_url)
+    birthday_embed = discord.Embed(color=discord.Colour.purple(),timestamp=datetime.datetime.now(datetime.timezone.utc))
+    birthday_embed.set_author(name=birthdayboy.name,icon_url=birthdayboy.avatar.url)
+    birthday_embed.set_footer(text="Responsible user: {0}".format(ctx.author.name),icon_url=ctx.author.avatar.url)
     if birthday_role in birthdayboy.roles:
         await birthdayboy.remove_roles(birthday_role,reason="Responsible user: %s" % ctx.author.name)
         birthday_embed.description = "{0} removed the birthday boy role from {1}".format(ctx.author.name,birthdayboy.name)
@@ -250,38 +254,50 @@ async def birthday(ctx, birthdayboy: discord.Member):
 
 
 @client.command(name='boosters')
-@commands.cooldown(1,15,commands.BucketType.channel)
+@commands.cooldown(1, 15, commands.BucketType.channel)
 async def boosters(ctx):
     home_server_info = client.get_guild(home_server_ID)
     boosters_list = home_server_info.premium_subscribers
-    boosters_list.sort(key=lambda b: b.premium_since) # Sorts boosters from oldest to most recent
-    booster_embed = discord.Embed(title="There are currently {0} people boosting the server. Current tier: {1}".format(home_server_info.premium_subscription_count, home_server_info.premium_tier),timestamp=datetime.datetime.utcnow(),color=discord.Colour.blue())
-    booster_embed.set_footer(text="queried by {0}".format(ctx.author.name),icon_url=ctx.author.avatar_url)
-    booster_embed.set_author(name=ctx.guild.name,icon_url=ctx.guild.icon_url)
+    boosters_list.sort(key=lambda b: b.premium_since)  # Sorts boosters from oldest to most recent
+    booster_embed = discord.Embed(
+        title="There are currently {0} people boosting the server. Current tier: {1}".format(
+            home_server_info.premium_subscription_count, home_server_info.premium_tier
+        ),
+        timestamp=datetime.datetime.now(datetime.timezone.utc),
+        color=discord.Colour.blue()
+    )
+    booster_embed.set_footer(text="queried by {0}".format(ctx.author.name), icon_url=ctx.author.avatar.url)  # Corrected line
+    booster_embed.set_author(name=ctx.guild.name, icon_url=ctx.guild.icon.url)
     for booster in boosters_list:
-        booster_embed.add_field(name="{0}, joined {1}".format(booster.name,booster.joined_at.strftime("%b %d %Y")),value="{0} - Boosting since: {1}".format(booster.mention,booster.premium_since.strftime("%b %d %Y")),inline=False)
+        booster_embed.add_field(
+            name="{0}, joined {1}".format(booster.name, booster.joined_at.strftime("%b %d %Y")),
+            value="{0} - Boosting since: {1}".format(booster.mention, booster.premium_since.strftime("%b %d %Y")),
+            inline=False
+        )
     await ctx.send(embed=booster_embed)
+
 
 
 @client.command(name='uptime')
 @commands.cooldown(1,10,commands.BucketType.user)
 async def uptime(ctx):
-    uptime_end = datetime.datetime.utcnow() - uptime_start
-    uptime_embed = discord.Embed(timestamp=datetime.datetime.utcnow(),color=random.choice(colors))
-    uptime_embed.set_author(name=client.user.name, icon_url=client.user.avatar_url)
-    uptime_embed.set_footer(text="queried by {0}".format(ctx.author.name),icon_url=ctx.author.avatar_url)
+    uptime_end = datetime.datetime.now(datetime.timezone.utc) - uptime_start
+    uptime_embed = discord.Embed(timestamp=datetime.datetime.now(datetime.timezone.utc),color=random.choice(colors))
+    uptime_embed.set_author(name=client.user.name, icon_url=client.user.avatar.url)
+    uptime_embed.set_footer(text="queried by {0}".format(ctx.author.name),icon_url=ctx.author.avatar.url)
     uptime_embed.add_field(name="Current uptime",value="{0.days} days {1} hours {2} minutes".format(uptime_end,uptime_end.seconds//3600,(uptime_end.seconds//60)%60)) # Fix seconds
     await ctx.send(embed=uptime_embed)
     logging.info("{0.author.name} ({0.author.id} used uptime command in {0.channel.name} ({0.channel.id}))".format(ctx))
 
 
 @client.command(name='github')
-@commands.cooldown(1,10,commands.BucketType.user)
+@commands.cooldown(1, 10, commands.BucketType.user)
 async def github(ctx):
-    github_embed = discord.Embed(timestamp=datetime.datetime.utcnow(),colors=random.choice(colors))
-    github_embed.set_author(name="github.com/mmcmd",icon_url="https://avatars1.githubusercontent.com/u/36875145")
-    github_embed.set_footer(text="queried by {0}".format(ctx.author.name),icon_url=ctx.author.avatar_url)
-    github_embed.add_field(name="The source code of this bot can be found at:",value="https://github.com/mmcmd/verification-bot")
+    github_embed = discord.Embed(timestamp=datetime.datetime.now(datetime.timezone.utc))  # Create the embed without the 'colors' argument
+    github_embed.color = random.choice(colors)  # Set the color after creation
+    github_embed.set_author(name="github.com/mmcmd", icon_url="https://avatars1.githubusercontent.com/u/36875145")
+    github_embed.set_footer(text="queried by {0}".format(ctx.author.name), icon_url=ctx.author.avatar.url)
+    github_embed.add_field(name="The source code of this bot can be found at:", value="https://github.com/mmcmd/verification-bot")
     await ctx.send(embed=github_embed)
 
 
@@ -318,12 +334,14 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
 
     if payload.emoji.name == '✅':
         client.approved_list.append(payload.user_id)
-        log_embed = discord.Embed(title='Emergency request approved',description="{0.mention} has approved emergency request {1} ({2}/{3})".format(payload.member,client.bot_emergency_message.id,len(client.approved_list),emergency_request_approval_threshold),timestamp=datetime.datetime.utcnow(),color=discord.Colour.green())
+        log_embed = discord.Embed(title='Emergency request approved',description="{0.mention} has approved emergency request {1} ({2}/{3})".format(payload.member,client.bot_emergency_message.id,len(client.approved_list),emergency_request_approval_threshold),timestamp=datetime.datetime.now(datetime.timezone.utc),color=discord.Colour.green())
         log_embed.add_field(name="Link to message",value=client.bot_emergency_message_link)
         await log_channel.send(embed=log_embed)
         logging.info("{0.mention} ({0.id}) has approved emergency request {1}".format(payload.member,client.bot_emergency_message.id))
         await client.bot_emergency_message.edit(content="An emergency has been called by {0}.\nVerification is needed by at least {2} other members of sudo level 1 or higher to validate that this is indeed an emergency." \
                                           " If you're sudo 1 or above and deem this an emergency, react with the ✅ emoji. If this does not qualify as an emergency, react with ❌. \n \n" \
+                                          "**Make sure all the details about the incident are clear and you have elaborated clearly on what the issue actually is!** \n \n" \
+                                          "__Reminder that the emergency ping is reserved for business production issues that are extremely time sensitive, not for homework or any other non-emergency issue.__ \n \n"
                                           "Approved: {1}/{2} \n \n Denied: {3}/{4}".format(client.emergency_caller_object.author.mention,len(client.approved_list),emergency_request_approval_threshold,len(client.denied_list),emergency_request_deny_threshold))
 
         # Threshold reached for emergency approval, emergency approved
@@ -337,12 +355,14 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
 
     if payload.emoji.name == '❌':
         client.denied_list.append(payload.user_id)
-        log_embed = discord.Embed(title='Emergency request denied',description="{0.mention} has denied emergency request {1} ({2}/{3})".format(payload.member,client.bot_emergency_message.id,len(client.denied_list),emergency_request_deny_threshold),timestamp=datetime.datetime.utcnow(),color=discord.Colour.green())
+        log_embed = discord.Embed(title='Emergency request denied',description="{0.mention} has denied emergency request {1} ({2}/{3})".format(payload.member,client.bot_emergency_message.id,len(client.denied_list),emergency_request_deny_threshold),timestamp=datetime.datetime.now(datetime.timezone.utc),color=discord.Colour.green())
         log_embed.add_field(name="Link to message",value=client.bot_emergency_message_link)
         await log_channel.send(embed=log_embed)
         logging.info("{0.mention} ({0.id}) has denied emergency request {1}".format(payload.member,client.bot_emergency_message.id))
         await client.bot_emergency_message.edit(content="An emergency has been called by {0}.\nVerification is needed by at least {2} other members of sudo level 1 or higher to validate that this is indeed an emergency." \
                                           " If you're sudo 1 or above and deem this an emergency, react with the ✅ emoji. If this does not qualify as an emergency, react with ❌. \n \n" \
+                                          "**Make sure all the details about the incident are clear and you have elaborated clearly on what the issue actually is!** \n \n" \
+                                            "__Reminder that the emergency ping is reserved for business production issues that are extremely time sensitive, not for homework or any other non-emergency issue.__ \n \n"
                                           "Approved: {1}/{2} \n \n Denied: {3}/{4}".format(client.emergency_caller_object.author.mention,len(client.approved_list),emergency_request_approval_threshold,len(client.denied_list),emergency_request_deny_threshold))
 
         # Threshold reached for emergency denial, emergency denied
@@ -365,32 +385,39 @@ async def emergency(ctx):
     client.emergency_caller_object = ctx
     guild = client.get_guild(ctx.guild.id)
     log_channel = guild.get_channel(log_channel_ID)
-
-
-    for role in ctx.author.roles:
-        if emergency_top_role_bypass_id == role.id:
-            emergency_role_object = ctx.guild.get_role(emergency_role_id)
-            await ctx.send("An emergency is being called by {0.author.mention}.\n \n {1.mention}".format(ctx,emergency_role_object))
-            emergency_embed = discord.Embed(title="Emergency called",timestamp=datetime.datetime.utcnow(),color=random.choice(colors))
-            emergency_embed.description = "{0.author.mention} ({0.author.id}) used the emergency command in {0.channel.name} (<#{0.channel.id}>))".format(ctx)
-            emergency_embed.add_field(name="Link to message",value="https://discord.com/channels/{0.id}/{1}/{2}".format(guild,ctx.channel.id,ctx.message.id))
-            await log_channel.send(embed=emergency_embed)
-            return
-
+    emergency_role_object = ctx.guild.get_role(emergency_role_id)
+    bypass_roles = []
+   
+    for role_id in emergency_top_role_bypass_id:
+        bypass_roles.append((ctx.guild.get_role(role_id)))
+    
 
     if client.emergency_active == True:
         await ctx.channel.send("There is already an emergency active. To clear it, ask a mod or <@{0}> to type `{2}clearemergency` or deny/approve the existing one." \
                                 "\n \n Link to the current emergency: {1}".format(moderator_mail,client.bot_emergency_message_link,prefix))
         return
 
+    if any(role in ctx.author.roles for role in bypass_roles):  # Check for any matching role
+        await ctx.send("An emergency is being called by {0.author.mention}.\n \n {1.mention}\n \n"
+              "**{0.author.mention}, make sure to provide all necessary info (screenshots if possible, things you've tried already, and any other details people might need to know).**"
+              .format(ctx, emergency_role_object))
+        emergency_embed = discord.Embed(title="Emergency called",timestamp=datetime.datetime.now(datetime.timezone.utc),color=random.choice(colors))
+        emergency_embed.description = "{0.author.mention} ({0.author.id}) used the emergency command in {0.channel.name} (<#{0.channel.id}>))".format(ctx)
+        emergency_embed.add_field(name="Link to message",value="https://discord.com/channels/{0.id}/{1}/{2}".format(guild,ctx.channel.id,ctx.message.id))
+        await log_channel.send(embed=emergency_embed)
+        return
+
+
     client.emergency_active = True
     client.bot_emergency_message = await ctx.send(("An emergency has been called by {0}.\nVerification is needed by at least {2} other members of sudo level 1 or higher to validate that this is indeed an emergency." \
                                             " If you're sudo 1 or above and deem this an emergency, react with the ✅ emoji. If this does not qualify as an emergency, react with ❌. \n \n" \
+                                            "**Make sure all the details about the incident are clear and you have elaborated clearly on what the issue actually is!** \n \n" \
+                                            "__Reminder that the emergency ping is reserved for business production issues that are extremely time sensitive, not for homework or any other non-emergency issue.__ \n \n"
                                             "Approved: {1}/{2} \n \n Denied: {3}/{4}").format(client.emergency_caller_object.author.mention,len(client.approved_list),emergency_request_approval_threshold,len(client.denied_list),emergency_request_deny_threshold))
     await client.bot_emergency_message.add_reaction('✅')
     await client.bot_emergency_message.add_reaction('❌')
     client.bot_emergency_message_link = "https://discord.com/channels/{0.id}/{1}/{2}".format(guild,client.emergency_caller_object.channel.id,client.bot_emergency_message.id)
-    emergency_embed = discord.Embed(title="Emergency called",timestamp=datetime.datetime.utcnow(),color=random.choice(colors))
+    emergency_embed = discord.Embed(title="Emergency called",timestamp=datetime.datetime.now(datetime.timezone.utc),color=random.choice(colors))
     emergency_embed.description = "{0.author.mention} ({0.author.id}) used the emergency command in {0.channel.name} (<#{0.channel.id}>))".format(ctx)
     emergency_embed.add_field(name="Link to message",value="{0}".format(client.bot_emergency_message_link))
     await log_channel.send(embed=emergency_embed)
@@ -416,6 +443,25 @@ async def clearemergency(ctx):
         await ctx.channel.send("The current emergency has been cancelled. The emergency command can now be called, assuming it is off cooldown (2 mins).")
     elif client.emergency_active == False:
         await ctx.channel.send("There is currently no active emergency.")
+
+
+@client.command(name='irc')
+@commands.has_any_role(*moderator_role_IDs)
+@commands.guild_only()
+async def docker_command(ctx, action):
+    allowed_actions = ['stop', 'restart', 'start']
+    if action not in allowed_actions:
+        await ctx.send("Invalid action. Please use one of: `stop, restart, start`")
+        return
+
+    command = f'docker {action} {irc_relay_container_id}'
+
+    try:
+        output = subprocess.check_output(command, shell=True, text=True)
+        await ctx.send(f"{action} successful on the docker container:`{output}`")
+    except subprocess.CalledProcessError as e:
+        await ctx.send(f"Error executing docker command: {e}")
+
 
 
 
