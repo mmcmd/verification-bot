@@ -340,6 +340,8 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
         logging.info("{0.mention} ({0.id}) has approved emergency request {1}".format(payload.member,client.bot_emergency_message.id))
         await client.bot_emergency_message.edit(content="An emergency has been called by {0}.\nVerification is needed by at least {2} other members of sudo level 1 or higher to validate that this is indeed an emergency." \
                                           " If you're sudo 1 or above and deem this an emergency, react with the ✅ emoji. If this does not qualify as an emergency, react with ❌. \n \n" \
+                                          "**Make sure all the details about the incident are clear and you have elaborated clearly on what the issue actually is!** \n \n" \
+                                          "__Reminder that the emergency ping is reserved for business production issues that are extremely time sensitive, not for homework or any other non-emergency issue.__ \n \n"
                                           "Approved: {1}/{2} \n \n Denied: {3}/{4}".format(client.emergency_caller_object.author.mention,len(client.approved_list),emergency_request_approval_threshold,len(client.denied_list),emergency_request_deny_threshold))
 
         # Threshold reached for emergency approval, emergency approved
@@ -359,6 +361,8 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
         logging.info("{0.mention} ({0.id}) has denied emergency request {1}".format(payload.member,client.bot_emergency_message.id))
         await client.bot_emergency_message.edit(content="An emergency has been called by {0}.\nVerification is needed by at least {2} other members of sudo level 1 or higher to validate that this is indeed an emergency." \
                                           " If you're sudo 1 or above and deem this an emergency, react with the ✅ emoji. If this does not qualify as an emergency, react with ❌. \n \n" \
+                                          "**Make sure all the details about the incident are clear and you have elaborated clearly on what the issue actually is!** \n \n" \
+                                            "__Reminder that the emergency ping is reserved for business production issues that are extremely time sensitive, not for homework or any other non-emergency issue.__ \n \n"
                                           "Approved: {1}/{2} \n \n Denied: {3}/{4}".format(client.emergency_caller_object.author.mention,len(client.approved_list),emergency_request_approval_threshold,len(client.denied_list),emergency_request_deny_threshold))
 
         # Threshold reached for emergency denial, emergency denied
@@ -408,6 +412,7 @@ async def emergency(ctx):
     client.bot_emergency_message = await ctx.send(("An emergency has been called by {0}.\nVerification is needed by at least {2} other members of sudo level 1 or higher to validate that this is indeed an emergency." \
                                             " If you're sudo 1 or above and deem this an emergency, react with the ✅ emoji. If this does not qualify as an emergency, react with ❌. \n \n" \
                                             "**Make sure all the details about the incident are clear and you have elaborated clearly on what the issue actually is!** \n \n" \
+                                            "__Reminder that the emergency ping is reserved for business production issues that are extremely time sensitive, not for homework or any other non-emergency issue.__ \n \n"
                                             "Approved: {1}/{2} \n \n Denied: {3}/{4}").format(client.emergency_caller_object.author.mention,len(client.approved_list),emergency_request_approval_threshold,len(client.denied_list),emergency_request_deny_threshold))
     await client.bot_emergency_message.add_reaction('✅')
     await client.bot_emergency_message.add_reaction('❌')
