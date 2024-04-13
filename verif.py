@@ -471,7 +471,7 @@ async def docker_command(ctx, action):
 
         try:
             output = subprocess.check_output(command, shell=True, text=True)
-            await ctx.send(f"Status of the docker container:\n \n`{output}`")
+            await ctx.send(f"Status of the IRC relay docker container:\n \n`{output}`")
         except subprocess.CalledProcessError as e:
             await ctx.send(f"Error executing docker command: {e}")
 
