@@ -6,7 +6,7 @@ import asyncio
 import datetime
 from discord.ext import commands
 import json
-import subprocess
+import docker
 
 from discord.partial_emoji import PartialEmoji
 
@@ -62,6 +62,8 @@ emergency_top_role_bypass_id = [int(m) for m in emergency_top_role_bypass_id] # 
 
 birthday_role_id = int(config_json["birthday_role_ID"])
 
+
+client = docker.from_env()
 irc_relay_container_id = str(config_json["irc_relay_id"])
 
 colors = [discord.Colour.purple(), discord.Colour.blue(), discord.Colour.red(), discord.Colour.green(), discord.Colour.orange()] # Discord colors for embedding
@@ -456,9 +458,8 @@ async def docker_command(ctx, action):
 
     log_channel = client.get_channel(log_channel_ID)
 
+    '''
     if action != 'status':
-
-        command = f'docker {action} {irc_relay_container_id}'
 
         try:
             output = subprocess.check_output(command, shell=True, text=True)
@@ -469,7 +470,6 @@ async def docker_command(ctx, action):
 
     elif action == 'status':
 
-        command = f'docker ps -a --filter "id={irc_relay_container_id}"'
 
         try:
             output = subprocess.check_output(command, text=True)
@@ -477,21 +477,15 @@ async def docker_command(ctx, action):
         except subprocess.CalledProcessError as e:
             await ctx.send(f"Error executing docker command: {e}")
             return
+    '''
+    irc_relay_container = client.containers.get(irc_relay_container_id)
+    output = irc_relay_container.action
+
 
     # Create embed message and send it
     irc_reply_embed = discord.Embed(title=f"{action} command used on the IRC relay",timestamp=datetime.datetime.now(datetime.timezone.utc)) 
     irc_reply_embed.color = random.choice(colors)
-    
-    chunk_size = 2000
-    output_chunks = [output[i:i+chunk_size] for i in range(0, len(output), chunk_size)]
-
-    description = ""
-    for chunk in output_chunks:
-        description += chunk + "\n"  # Add newline between chunks
-
-    irc_reply_embed.description = f"{description}"
-
-    #irc_reply_embed.description = f"{action} successful on the IRC relay."
+    #irc_reply_embed.description = f"{action} command successful on the IRC relay."
     irc_reply_embed.add_field(name=f"Output of the {action} command:",value=f"`{output}`")
     irc_reply_embed.set_footer(text="queried by {0}".format(ctx.author.name), icon_url=ctx.author.avatar.url)
     irc_reply_embed.set_author(name=client.user.name, icon_url=client.user.avatar.url)
