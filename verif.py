@@ -482,7 +482,7 @@ async def docker_command(ctx, action):
     irc_reply_embed = discord.Embed(title=f"{action} command used on the IRC relay",timestamp=datetime.datetime.now(datetime.timezone.utc)) 
     irc_reply_embed.color = random.choice(colors)
     irc_reply_embed.description = f"{action} successful on the IRC relay."
-    irc_reply_embed.add_field(f"Output of the {action} command:",f"`{output}`")
+    irc_reply_embed.add_field(name=f"Output of the {action} command:",value=f"`{output}`")
     irc_reply_embed.set_footer(text="queried by {0}".format(ctx.author.name), icon_url=ctx.author.avatar.url)
     irc_reply_embed.set_author(name=client.user.name, icon_url=client.user.avatar.url)
     await ctx.send(embed=irc_reply_embed)
