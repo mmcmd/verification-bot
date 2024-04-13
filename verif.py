@@ -442,6 +442,7 @@ async def clearemergency(ctx):
 
 @client.command(name='irc')
 @commands.has_any_role(*moderator_role_IDs)
+@commands.guild_only()
 async def docker_command(ctx, action):
     allowed_actions = ['stop', 'restart', 'start']
     if action not in allowed_actions:
