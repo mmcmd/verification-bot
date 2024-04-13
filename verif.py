@@ -63,7 +63,7 @@ emergency_top_role_bypass_id = [int(m) for m in emergency_top_role_bypass_id] # 
 birthday_role_id = int(config_json["birthday_role_ID"])
 
 
-client = docker.from_env()
+docker_client = docker.from_env()
 irc_relay_container_id = str(config_json["irc_relay_id"])
 
 colors = [discord.Colour.purple(), discord.Colour.blue(), discord.Colour.red(), discord.Colour.green(), discord.Colour.orange()] # Discord colors for embedding
@@ -478,7 +478,7 @@ async def docker_command(ctx, action):
             await ctx.send(f"Error executing docker command: {e}")
             return
     '''
-    irc_relay_container = client.containers.get(irc_relay_container_id)
+    irc_relay_container = docker_client.containers.get(irc_relay_container_id)
     output = irc_relay_container.action
 
 
