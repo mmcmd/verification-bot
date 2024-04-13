@@ -449,18 +449,31 @@ async def clearemergency(ctx):
 @commands.has_any_role(*moderator_role_IDs)
 @commands.guild_only()
 async def docker_command(ctx, action):
-    allowed_actions = ['stop', 'restart', 'start']
+    allowed_actions = ['stop', 'restart', 'start', 'status']
     if action not in allowed_actions:
         await ctx.send("Invalid action. Please use one of: `stop, restart, start`")
         return
 
-    command = f'docker {action} {irc_relay_container_id}'
 
-    try:
-        output = subprocess.check_output(command, shell=True, text=True)
-        await ctx.send(f"{action} successful on the docker container:`{output}`")
-    except subprocess.CalledProcessError as e:
-        await ctx.send(f"Error executing docker command: {e}")
+    if action != 'status':
+
+        command = f'docker {action} {irc_relay_container_id}'
+
+        try:
+            output = subprocess.check_output(command, shell=True, text=True)
+            await ctx.send(f"{action} successful on the docker container:`{output}`")
+        except subprocess.CalledProcessError as e:
+            await ctx.send(f"Error executing docker command: {e}")
+
+    elif action == 'status':
+
+        command = f'docker ps -a --filter "id={irc_relay_container_id}"'
+
+        try:
+            output = subprocess.check_output(command, shell=True, text=True)
+            await ctx.send(f"Status of the docker container:\n \n`{output}`")
+        except subprocess.CalledProcessError as e:
+            await ctx.send(f"Error executing docker command: {e}")
 
 
 
