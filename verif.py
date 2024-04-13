@@ -472,7 +472,7 @@ async def docker_command(ctx, action):
         command = f'docker ps -a --filter "id={irc_relay_container_id}"'
 
         try:
-            output = subprocess.check_output(command, shell=True, text=True)
+            output = subprocess.check_output(command, text=True)
             await ctx.send(f":notepad_spiral: Status of the IRC relay docker container:\n \n`{output}`")
         except subprocess.CalledProcessError as e:
             await ctx.send(f"Error executing docker command: {e}")
@@ -481,7 +481,17 @@ async def docker_command(ctx, action):
     # Create embed message and send it
     irc_reply_embed = discord.Embed(title=f"{action} command used on the IRC relay",timestamp=datetime.datetime.now(datetime.timezone.utc)) 
     irc_reply_embed.color = random.choice(colors)
-    irc_reply_embed.description = f"{action} successful on the IRC relay."
+    
+    chunk_size = 2000
+    output_chunks = [output[i:i+chunk_size] for i in range(0, len(output), chunk_size)]
+
+    description = ""
+    for chunk in output_chunks:
+        description += chunk + "\n"  # Add newline between chunks
+
+    irc_reply_embed.description = f"{description}"
+
+    #irc_reply_embed.description = f"{action} successful on the IRC relay."
     irc_reply_embed.add_field(name=f"Output of the {action} command:",value=f"`{output}`")
     irc_reply_embed.set_footer(text="queried by {0}".format(ctx.author.name), icon_url=ctx.author.avatar.url)
     irc_reply_embed.set_author(name=client.user.name, icon_url=client.user.avatar.url)
