@@ -12,6 +12,7 @@ Pinging a role destined for emergencies only with a certain amount of reactions 
 
 PM people who boost the server with a thank you message
 
+IRC relay container management (ability to restart container on the server via Discord command)
 
 ### Potential future features
 
