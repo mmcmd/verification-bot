@@ -79,7 +79,7 @@ intents.members = True
 
 # Logging in to the bot
 
-client = commands.Bot(command_prefix=prefix,activity=discord.Activity(type=discord.ActivityType.playing), name=status, intents=intents)
+client = commands.Bot(command_prefix=prefix,activity=discord.Activity(type=discord.ActivityType.playing, name=status), intents=intents)
 
 
 
