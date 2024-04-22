@@ -471,7 +471,7 @@ async def docker_command(ctx, action):
         if (irc_relay_container.status) == "running":
                 await ctx.send(f"The IRC relay is already running.")
         else:
-            irc_relay_container.start
+            irc_relay_container.start()
             irc_relay_container.reload()
             irc_reply_embed.add_field(name=f"IRC relay container {irc_relay_container.id}",value=f":white_check_mark: The IRC relay container {irc_relay_container_id} has been started")
 
@@ -479,12 +479,12 @@ async def docker_command(ctx, action):
         if (irc_relay_container.status) == "exited":
             await ctx.send(f"The IRC relay is already stopped.")
         else:
-            irc_relay_container.stop
+            irc_relay_container.stop()
             irc_relay_container.reload()
             irc_reply_embed.add_field(name=f"IRC relay container {irc_relay_container_id}",value=f":white_check_mark: The IRC relay container {irc_relay_container_id} has been stopped")
 
     elif action == "restart":
-        irc_relay_container.restart
+        irc_relay_container.restart()
         irc_reply_embed.add_field(name=f"IRC relay container {irc_relay_container_id}",value=f":white_check_mark: The IRC relay container {irc_relay_container_id} has been restarted")
 
     elif action == "status":
