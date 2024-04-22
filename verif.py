@@ -459,7 +459,7 @@ async def docker_command(ctx, action):
     log_channel = client.get_channel(log_channel_ID)
 
     # Create embed message and send it
-    irc_reply_embed = discord.Embed(title=f"<:operational:1232007523188342936> {action} command used on the IRC relay",timestamp=datetime.datetime.now(datetime.timezone.utc)) 
+    irc_reply_embed = discord.Embed(title=f"{action} command used on the IRC relay",timestamp=datetime.datetime.now(datetime.timezone.utc)) 
     irc_reply_embed.color = random.choice(colors)
     irc_reply_embed.set_footer(text="queried by {0}".format(ctx.author.name), icon_url=ctx.author.avatar.url)
     irc_reply_embed.set_author(name=client.user.name, icon_url=client.user.avatar.url)
@@ -496,4 +496,4 @@ async def docker_command(ctx, action):
 
 
 
-client.run(token)
+client.run(token)a
