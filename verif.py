@@ -170,11 +170,11 @@ async def on_member_join(member):
     home_server_info = home_server.get_member(member_id) # Fetches user info from said guild
     home_server_verified_role = home_server.get_role(verified_role) # The ID of the role that the bot gives in order for the person to be able to use the server
     if account_age_days > verification_requirement_join:
-        await home_server_info.add_roles(home_server_verified_role, reason="Account age is over 3 months (%d days), user has automatically been verified."% account_age_days) # Adds unverified role to the user
-        log_embed = discord.Embed(description="<@%d> has been verified automatically because his account age is over 3 months (%d days)"% (member_id,account_age_days),timestamp=datetime.datetime.now(datetime.timezone.utc),color=discord.Colour.green())
+        await home_server_info.add_roles(home_server_verified_role, reason="%s has been verified automatically because his account age is %d days, which is over the verification threshold of %s days"% (str(member.name),account_age_days,verification_requirement_join)) # Adds unverified role to the user
+        log_embed = discord.Embed(description="<@%d> has been verified automatically because his account age is over the verification threshold (%d days)"% (member_id,account_age_days),timestamp=datetime.datetime.now(datetime.timezone.utc),color=discord.Colour.green())
         log_embed.set_author(name=member.id, icon_url=member.avatar.url)
         await log_channel.send(embed=log_embed)
-        logging.info("%s (%d) has been verified automatically because his account age is over 3 months (%d days)"% (str(member.name),member_id,account_age_days))
+        logging.info("%s (%d) has been verified automatically because his account age is %d days, which is over the verification threshold of %s days"% (str(member.name),member_id,account_age_days,verification_requirement_join))
         return
 
 
@@ -453,42 +453,43 @@ async def clearemergency(ctx):
 async def docker_command(ctx, action):
     allowed_actions = ['stop', 'restart', 'start', 'status']
     if action not in allowed_actions:
-        await ctx.send("Invalid action. Please use one of: `stop, restart, start`")
+        await ctx.send("Invalid action. Please use one of the following arguments: `stop, restart, start or status`")
         return
 
     log_channel = client.get_channel(log_channel_ID)
 
-    '''
-    if action != 'status':
-
-        try:
-            output = subprocess.check_output(command, shell=True, text=True)
-            await ctx.send(f":white_check_mark: {action} successful on the docker container:`{output}`")
-        except subprocess.CalledProcessError as e:
-            await ctx.send(f"Error executing docker command: {e}")
-            return
-
-    elif action == 'status':
-
-
-        try:
-            output = subprocess.check_output(command, text=True)
-            await ctx.send(f":notepad_spiral: Status of the IRC relay docker container:\n \n`{output}`")
-        except subprocess.CalledProcessError as e:
-            await ctx.send(f"Error executing docker command: {e}")
-            return
-    '''
-    irc_relay_container = docker_client.containers.get(irc_relay_container_id)
-    output = irc_relay_container.action
-
-
     # Create embed message and send it
-    irc_reply_embed = discord.Embed(title=f"{action} command used on the IRC relay",timestamp=datetime.datetime.now(datetime.timezone.utc)) 
+    irc_reply_embed = discord.Embed(title=f"<:operational:1232007523188342936> {action} command used on the IRC relay",timestamp=datetime.datetime.now(datetime.timezone.utc)) 
     irc_reply_embed.color = random.choice(colors)
-    #irc_reply_embed.description = f"{action} command successful on the IRC relay."
-    irc_reply_embed.add_field(name=f"Output of the {action} command:",value=f"`{output}`")
     irc_reply_embed.set_footer(text="queried by {0}".format(ctx.author.name), icon_url=ctx.author.avatar.url)
     irc_reply_embed.set_author(name=client.user.name, icon_url=client.user.avatar.url)
+
+    irc_relay_container = docker_client.containers.get(irc_relay_container_id)
+
+    # Handling of parameters
+    if action == "start":
+        if (irc_relay_container.status) == "running":
+                await ctx.send(f"The IRC relay is already running.")
+        else:
+            irc_relay_container.start
+            irc_relay_container.reload()
+            irc_reply_embed.add_field(name=f"IRC relay container {irc_relay_container.id}",value=f":white_check_mark: The IRC relay container {irc_relay_container_id} has been started")
+
+    elif action == "stop":
+        if (irc_relay_container.status) == "exited":
+            await ctx.send(f"The IRC relay is already stopped.")
+        else:
+            irc_relay_container.stop
+            irc_relay_container.reload()
+            irc_reply_embed.add_field(name=f"IRC relay container {irc_relay_container_id}",value=f":white_check_mark: The IRC relay container {irc_relay_container_id} has been stopped")
+
+    elif action == "restart":
+        irc_relay_container.restart
+        irc_reply_embed.add_field(name=f"IRC relay container {irc_relay_container_id}",value=f":white_check_mark: The IRC relay container {irc_relay_container_id} has been restarted")
+
+    elif action == "status":
+        irc_reply_embed.add_field(name=f"IRC relay container {irc_relay_container_id}",value=f"<:operational:1232007523188342936> Status of the IRC relay container {irc_relay_container_id}: {irc_relay_container.status}")
+
     await ctx.send(embed=irc_reply_embed)
     await log_channel.send(embed=irc_reply_embed)
 
