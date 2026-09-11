@@ -34,6 +34,7 @@ status = config_json["status"]
 colored_roles = config_json["colored_roles"]
 colored_roles = [int(c) for c in colored_roles] # Making sure they are ints
 
+nitro_role_id = int(config_json["nitro_role"])
 
 prefix = config_json["prefix"]
 
@@ -188,7 +189,9 @@ async def on_member_update(member,updatedmember):
     if check_boost is not None:
         if check_if_unboost is None:
             logging.info("{0} ({1}) unboosted the server.".format(member.name,member_id))
+            nitrorole = member.guild.get_role(nitro_role_id)
             home_server = client.get_guild(home_server_ID)
+            await updatedmember.remove_roles(nitrorole, reason="User unboosted the server, removing Nitro Booster role")
             log_channel_unboost = client.get_channel(unboost_channel_ID) # #logs channel
             log_embed_unboost = discord.Embed(description="{0} ({1}) unboosted the server.".format(member.mention,member.id),timestamp=datetime.datetime.now(datetime.timezone.utc),color=discord.Colour.red())
             log_embed_unboost.set_author(name=member.name, icon_url=member.avatar.url)
@@ -198,7 +201,9 @@ async def on_member_update(member,updatedmember):
                 await updatedmember.remove_roles(role, reason="User unboosted the server, colors have been removed")
     if check_boost is None:
         if check_if_unboost is not None:
+            nitrorole = member.guild.get_role(nitro_role_id) # Role to show the member in the member list. User can remove it with selfroles if they don't want it.
             logging.info("{0} ({1}) boosted the server.".format(member.name,member_id))
+            await member.add_roles(nitrorole, reason="User boosted the server, giving him the Nitro Booster role")
             await member.send("Thank you for boosting /r/sysadmin! As a booster you have access to a new channel (<#585867795942604800>) as well as being" \
             " able to choose from a variety of colored roles. Check the <#516816975427797012> channel for more info on getting a colored role!\n If you have any questions feel free" \
             " to message Moderator Mail (top of the member list)")
