@@ -1,14 +1,25 @@
 {
-    "on_message": {
-        "verify_begin": "Sorry, your account must be {0} or older in order to get verified. Please either verify with your phone number or contact the mod team through <@{1}}> (Moderator mail, top of the member list) for manual verification if you're unable to verify with a phone number.",
-        "verify_done": "You have been verified. Please remember to read the <#{0}>. You may also assign yourself roles in <#{1}>. If you ever have an issue, do not hesitate to message <@{2}> (Moderator Mail, top of the member list)",
-        "verify_abort": "You're already able to speak in the server, there is no need for you to get verified. Contact <@{0}> (Moderator Mail, top of the member list) if there is an issue.",
-        "verify_done_channel0": "448941767325253632",
-        "verify_done_channel1": "516816975427797012"
+    "verification": {
+        "dm_hint": "Hi! To get access to **/r/sysadmin**, run the **/verify** slash command. You can run it right here in this DM by typing `/verify`, or in any channel of the server.\n\nIf that does not work, contact <@{moderator_mail_id}> (Moderator Mail, at the top of the member list) and a moderator will help you out.",
+        "not_a_member": "You need to join the /r/sysadmin server before I can verify you.",
+        "already_verified": "You already have access to the server, so there is nothing to verify. Contact <@{moderator_mail_id}> (Moderator Mail, at the top of the member list) if something looks wrong.",
+        "too_young": "Sorry, your Discord account must be at least **{required_days} days** old to be verified this way. Your account is **{account_age_days} days** old.\n\nYou can either verify with a phone number in the server, or contact <@{moderator_mail_id}> (Moderator Mail, at the top of the member list) for manual verification.",
+        "success": "You have been verified. Please remember to read <#{rules_channel_id}>, and feel free to assign yourself roles in <#{roles_channel_id}>.\n\nIf you ever have an issue, do not hesitate to message <@{moderator_mail_id}> (Moderator Mail, at the top of the member list).",
+        "role_missing": "Verification is temporarily unavailable. Please contact <@{moderator_mail_id}> (Moderator Mail, at the top of the member list).",
+        "forbidden": "I could not assign your role because of a permissions problem. Please contact <@{moderator_mail_id}> (Moderator Mail, at the top of the member list)."
     },
-    "birthday": {
-    	"role_add": "Gave the Birthday {0} role to <@{1}>. Automatically removing it in {2}",
-    	"role_remove": "<@{0}> removed the Birthday {1} role from <@{2}>",
-    	"duration_hours": "12"
+    "boost": {
+        "thank_you": "Thank you for boosting /r/sysadmin! As a booster you have access to a new channel (<#585867795942604800>), as well as a variety of colored roles. Check <#{roles_channel_id}> for more info on getting a colored role.\n\nIf you have any questions, feel free to message Moderator Mail (at the top of the member list)."
+    },
+    "emergency": {
+        "prompt": "An emergency has been called by {caller}.\n\n**Reason:** {reason}\n\nVerification is needed from at least **{approval_threshold}** other members of sudo level 1 or higher to confirm that this is indeed an emergency. Use the buttons below to approve or deny.\n\n**{caller}, make sure all the details about the incident are clear: what is broken, what you have already tried, and any screenshots or logs that help.**\n\n__The emergency ping is reserved for business production issues that are extremely time sensitive, not for homework or any other non-emergency issue.__\n\nApproved: {approvals}/{approval_threshold}  \u2022  Denied: {denials}/{deny_threshold}",
+        "approved": "The emergency called by {caller} has been approved.\n\n**Reason:** {reason}\n\nLink to the request: {link}\n\n{role}",
+        "denied": "{caller}, your emergency request has been denied. Reminder that the emergency ping is reserved for business production issues that are extremely time sensitive, not for homework or any other non-emergency issue.",
+        "timed_out": "The emergency request called by {caller} has timed out and was cancelled. Link: {link}",
+        "cancelled": "The current emergency request has been cancelled by a moderator. The emergency command can be used again once its cooldown expires.",
+        "no_active": "There is currently no active emergency request.",
+        "already_active": "There is already an active emergency request. Ask a moderator to run `/clearemergency`, or approve/deny the existing one.\n\nLink to the current request: {link}",
+        "reminder": "There is currently an emergency request awaiting approval. Link: {link} \u2014 please approve or deny it if you can.",
+        "bypass": "An emergency is being called by {caller}.\n\n**Reason:** {reason}\n\n{role}\n\n**{caller}, make sure to provide all necessary info: screenshots if possible, things you have already tried, and any other details people might need to know.**"
     }
 }

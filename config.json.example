@@ -1,23 +1,31 @@
 {
-    "token": "your bot token",
-    "homeserver_id": "id of your server",
-    "verification_requirement_join": "set your verification requirement (in days) for auto-verification on join",
-    "verification_requirement_message": "set your verification requirement (in days) for a user to be verified manually (via DM)",
-    "moderator_mail_id": "ID of the bot which handles mod mails/tickets in your server",
-    "log_channel_id": "ID of the logs channel in your server",
-    "status": "message me to get verified!",
-    "colored_roles": [ "452201509816369162", "623681022717984779", "588461409034305576", "588422685390929967", "623681271918493706", "622191183757574144", "467409730927722497", "623681528949374997" ],
-    "prefix": "Enter your prefix here",
-    "unboost_announcement_channel_id": "Channel ID where unboosters are announced (this can be your logs channel)",
-    "moderator_role_IDs": ["Enter the role IDs", "of your mod roles", "here"],
-    "birthday_role_ID": "ID of birthday role",
-    "verified_role": "ID of the role that the bot gives upon verification"
-    "emergency_request_approval_threshold": "Amount of approvals needed to send an emergency ping",
-    "emergency_request_deny_threshold": "Amount of disapprovals needed to deny an emergency ping",
-    "ontopic_category_id": "ID of the category where emergency pings can be used",
-    "emergency_role_id": "Role ID of the emergency role to ping",
-    "emergency_role_reminder": "Amount of seconds between each reminder posted in chat that an emergency is active while an emergency is active"
-    "emergency_role_timeout": "Amount of times an emergency reminder is sent out (emergency_role_reminder * emergency_role_timeout) before an emergency is cancelled (ex: 3 = emergency would last 3*emergency_role_reminder seconds)",
-    "emergency_top_role_bypass_id": ["ID of a role where calling an emergency does not require approval"],
-    "irc_relay_id": "ID (or part of the ID) of the docker container for the IRC relay"
+    "token": "your bot token (prefer the DISCORD_TOKEN environment variable instead)",
+    "homeserver_id": "ID of your server",
+    "status": "/verify to get access",
+
+    "verified_role": "ID of the role the bot grants upon verification",
+    "verification_requirement_join": "90",
+    "verification_requirement_message": "5",
+
+    "moderator_mail_id": "ID of the bot which handles mod mail/tickets in your server",
+    "moderator_role_IDs": ["role ID", "of each", "moderator role"],
+
+    "log_channel_id": "ID of the audit log channel",
+    "unboost_announcement_channel_id": "ID of the channel where unboosts are announced",
+    "rules_channel_id": "ID of the rules channel linked in the verification message",
+    "roles_channel_id": "ID of the self-assignable roles channel linked in the verification message",
+
+    "colored_roles": ["452201509816369162", "623681022717984779"],
+
+    "ontopic_category_id": "ID of the category where /emergency may be used",
+    "emergency_role_id": "ID of the role that gets pinged for emergencies",
+    "emergency_request_approval_threshold": "3",
+    "emergency_request_deny_threshold": "2",
+    "emergency_role_reminder": "180",
+    "emergency_role_timeout": "5",
+    "emergency_top_role_bypass_id": ["ID of a role that may ping without approval"],
+
+    "irc_relay_id": "ID (or prefix) of the IRC relay Docker container; omit to disable /irc",
+    "log_directory": "logs",
+    "log_retention_days": "14"
 }
