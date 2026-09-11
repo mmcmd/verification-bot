@@ -1,0 +1,99 @@
+services:
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: verification-bot:latest
+    container_name: verification-bot
+    restart: unless-stopped
+    init: false # tini is the image entrypoint
+
+    secrets:
+      - discord_token
+      - log_encryption_key
+
+    environment:
+      DISCORD_TOKEN_FILE: /run/secrets/discord_token
+      LOG_ENCRYPTION_KEY_FILE: /run/secrets/log_encryption_key
+      TZ: UTC
+      # Ignored unless the 'irc' profile is running; the cog skips itself if the
+      # proxy is unreachable.
+      DOCKER_HOST: tcp://docker-socket-proxy:2375
+
+    networks:
+      - default
+      - irc-control
+
+    volumes:
+      - ./config.json:/app/config.json:ro
+      - ./resources/messages.json:/app/resources/messages.json:ro
+      - bot-logs:/app/logs
+
+    # Hardening: the bot only ever writes to /app/logs and /tmp.
+    read_only: true
+    tmpfs:
+      - /tmp:size=8m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+    # Steady-state usage is roughly 90-130 MB RSS on a 25k member guild.
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.50"
+        reservations:
+          memory: 96M
+
+    # stdout is a duplicate of the encrypted log file; keep it small and short-lived.
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # Optional: only needed for the /irc command.
+  # Exposing the raw Docker socket to a container is equivalent to giving it root
+  # on the host, so the bot talks to a proxy that permits container actions only.
+  docker-socket-proxy:
+    image: ghcr.io/tecnativa/docker-socket-proxy:0.3.0
+    container_name: verification-bot-socket-proxy
+    restart: unless-stopped
+    profiles: [irc]
+    environment:
+      CONTAINERS: 1
+      POST: 1
+      # Everything else stays denied.
+      IMAGES: 0
+      NETWORKS: 0
+      VOLUMES: 0
+      EXEC: 0
+      SECRETS: 0
+      SERVICES: 0
+      SWARM: 0
+      SYSTEM: 0
+      INFO: 0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    read_only: true
+    tmpfs:
+      - /run
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - irc-control
+
+secrets:
+  discord_token:
+    file: ./secrets/discord_token
+  log_encryption_key:
+    file: ./secrets/log_encryption_key
+
+volumes:
+  bot-logs:
+
+networks:
+  irc-control:
+    internal: true
