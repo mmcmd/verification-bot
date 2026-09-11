@@ -48,10 +48,16 @@ advertising, or used to train machine learning or AI models.
 ## 3. Encryption at rest
 
 The log file is encrypted record-by-record with Fernet (AES-128-CBC with HMAC-SHA256
-authentication) before it touches the disk. The key is supplied to the application as a
-mounted secret and is never stored in the container image, the source repository, or the
-process environment. Anyone who obtains the log volume without the key gets only ciphertext.
-The host volume additionally sits on an encrypted filesystem.
+authentication) before it touches the disk. In our deployment the key is supplied as a
+mounted Docker secret; the software also accepts it from the `LOG_ENCRYPTION_KEY`
+environment variable for non-containerised installations. The key is never stored in the
+container image or the source repository. Anyone who obtains the log volume without the key
+gets only ciphertext. The host volume additionally sits on an encrypted filesystem.
+
+The application also emits a plaintext operational log to standard output, which the
+container runtime stores outside the encrypted volume. That output is passed through a
+redacting formatter that replaces every Discord ID with a per-process HMAC pseudonym, and no
+usernames are written to logs at all, so this sink contains no data that identifies a user.
 
 ## 4. Where the data lives
 
@@ -72,7 +78,8 @@ moderators who administer the host.
 
 ## 6. Children
 
-The bot is only usable inside a Discord server, and Discord requires all users to be at least
+The bot is reachable only from within Discord — in the /r/sysadmin server, and in direct
+messages with the bot for the `/verify` command. Discord requires all users to be at least
 13 years old (or older where local law requires). The bot does not knowingly process data
 belonging to anyone below that age.
 

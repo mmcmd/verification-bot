@@ -156,7 +156,7 @@ class Emergency(commands.Cog):
                 colour=NEUTRAL,
             )
         )
-        log.info("Emergency request %s opened by %s (%s)", request.message_id, member, member.id)
+        log.info("Emergency request %s opened by member %s", request.message_id, member.id)
 
     @app_commands.command(
         name="clearemergency", description="Cancel the currently pending emergency request."
@@ -175,9 +175,8 @@ class Emergency(commands.Cog):
         await respond(interaction, self.bot.message("emergency.cancelled"))
         await self.conclude(request)
         log.info(
-            "Emergency request %s cancelled by %s (%s)",
+            "Emergency request %s cancelled by member %s",
             request.message_id,
-            interaction.user,
             interaction.user.id,
         )
 
@@ -226,8 +225,7 @@ class Emergency(commands.Cog):
             )
         )
         log.info(
-            "%s (%s) voted %s on emergency request %s",
-            interaction.user,
+            "Member %s voted %s on emergency request %s",
             interaction.user.id,
             vote.value,
             request.message_id,
@@ -240,16 +238,28 @@ class Emergency(commands.Cog):
 
     async def conclude(self, request: EmergencyRequest) -> None:
         """Finish a resolved request: announce the outcome and clean up state."""
-        if self._request is not request:
-            return
+        # Detach the request before awaiting anything, so a request opened while the
+        # announcements are in flight is never clobbered by this conclusion.
+        async with self._lock:
+            if self._request is not request:
+                return
+            view, message, reminder = self._view, self._message, self._reminder_task
+            self._request = None
+            self._view = None
+            self._message = None
+            self._reminder_task = None
 
-        if self._reminder_task is not None and self._reminder_task is not asyncio.current_task():
-            self._reminder_task.cancel()
-        if self._view is not None:
-            self._view.stop()
+        if reminder is not None and reminder is not asyncio.current_task():
+            reminder.cancel()
+        if view is not None:
+            view.stop()
 
         caller = await self._resolve_caller(request)
-        await self._update_message(request, caller, disable=True)
+        if message is not None:
+            try:
+                await message.edit(content=self._render(request, caller), view=None)
+            except discord.HTTPException:
+                log.exception("Failed to update emergency request message %s", request.message_id)
 
         channel = self.bot.get_channel(request.channel_id)
         caller_mention = caller.mention if caller else f"<@{request.caller_id}>"
@@ -296,11 +306,6 @@ class Emergency(commands.Cog):
             )
         )
         log.info("Emergency request %s concluded as %s", request.message_id, request.status.value)
-
-        self._request = None
-        self._view = None
-        self._message = None
-        self._reminder_task = None
 
     async def _reminder_loop(self, request: EmergencyRequest) -> None:
         interval = self.bot.config.emergency_role_reminder
@@ -354,7 +359,7 @@ class Emergency(commands.Cog):
                 colour=NEUTRAL,
             )
         )
-        log.info("%s (%s) called an emergency using a bypass role", member, member.id)
+        log.info("Member %s called an emergency using a bypass role", member.id)
 
     async def _resolve_caller(self, request: EmergencyRequest) -> discord.Member | None:
         guild = self.bot.get_guild(request.guild_id)
@@ -372,15 +377,14 @@ class Emergency(commands.Cog):
         )
 
     async def _update_message(
-        self, request: EmergencyRequest, caller: discord.Member | None, *, disable: bool = False
+        self, request: EmergencyRequest, caller: discord.Member | None
     ) -> None:
-        if self._message is None:
-            return
-        view: discord.ui.View | None = self._view
-        if disable:
-            view = None
+        async with self._lock:
+            if self._request is not request or self._message is None:
+                return
+            message, view = self._message, self._view
         try:
-            await self._message.edit(content=self._render(request, caller), view=view)
+            await message.edit(content=self._render(request, caller), view=view)
         except discord.HTTPException:
             log.exception("Failed to update emergency request message %s", request.message_id)
 

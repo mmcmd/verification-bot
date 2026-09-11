@@ -1,20 +1,50 @@
 """Logging configuration.
 
-Log files are the only place the bot writes Discord API data outside Discord, so
-they are encrypted at rest and rotated on a fixed retention window. Use
-``python -m verification_bot.logtools`` to generate a key or read a log back.
+Two sinks with deliberately different privacy properties:
+
+* the **file** sink keeps full detail and is encrypted at rest and retention-bounded;
+* the **console** sink is plaintext and is captured by the container runtime, so every
+  Discord ID is replaced with a per-process pseudonym before it is written.
+
+Use ``python -m verification_bot.logtools`` to generate a key or read a log back.
 """
 
 from __future__ import annotations
 
+import hashlib
+import hmac
 import logging
 import logging.handlers
+import re
+import secrets
 import sys
 from pathlib import Path
 
 LOG_FORMAT = "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s"
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 LOG_FILENAME = "verification.log"
+
+#: Discord snowflakes are 17-20 digit integers.
+SNOWFLAKE_PATTERN = re.compile(r"\b\d{17,20}\b")
+
+
+class RedactingFormatter(logging.Formatter):
+    """Replaces Discord IDs with unlinkable pseudonyms.
+
+    The salt is regenerated on every start, so an ID cannot be correlated across
+    restarts and the mapping cannot be reversed by anyone reading the output.
+    """
+
+    def __init__(self, fmt: str, datefmt: str, *, salt: bytes | None = None) -> None:
+        super().__init__(fmt, datefmt=datefmt)
+        self._salt = salt if salt is not None else secrets.token_bytes(32)
+
+    def format(self, record: logging.LogRecord) -> str:
+        return SNOWFLAKE_PATTERN.sub(self._pseudonym, super().format(record))
+
+    def _pseudonym(self, match: re.Match[str]) -> str:
+        digest = hmac.new(self._salt, match.group(0).encode("ascii"), hashlib.sha256)
+        return f"user:{digest.hexdigest()[:10]}"
 
 
 class InvalidLogKey(ValueError):
@@ -76,7 +106,7 @@ def setup_logging(
     file_handler.setFormatter(formatter)
 
     console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setFormatter(formatter)
+    console_handler.setFormatter(RedactingFormatter(LOG_FORMAT, DATE_FORMAT))
 
     root = logging.getLogger()
     root.setLevel(level)

@@ -20,8 +20,10 @@ Message Content or Presence. See [PRIVACY.md](PRIVACY.md).
 Automatic behaviour (no command needed):
 
 - Members whose account is older than `verification_requirement_join` days are verified on join.
-- Members who stop boosting lose their colored roles and are announced in the unboost channel.
-- Members who start boosting get a thank-you DM.
+- Members who start boosting get a thank-you DM and the hidden Nitro Booster role, which
+  displays them in the member list. They can self-remove it later without losing anything else.
+- Members who stop boosting lose their colored roles and the Nitro Booster role, and are
+  announced in the unboost channel.
 - DMing the bot returns a short message pointing at `/verify`. The message body is never read.
 
 ## Requirements
@@ -39,10 +41,12 @@ filesystem, capped at 256 MB / 0.5 CPU.
 cp config.json.example config.json
 $EDITOR config.json
 
+# Compose validates secret files before starting anything, so create them first.
+docker compose build bot
 mkdir -p secrets
 printf '%s' 'YOUR_BOT_TOKEN' > secrets/discord_token
-docker compose run --rm --no-deps --entrypoint \
-    python bot -m verification_bot.logtools generate-key > secrets/log_encryption_key
+docker run --rm --entrypoint python verification-bot:latest \
+    -m verification_bot.logtools generate-key > secrets/log_encryption_key
 chmod 600 secrets/*
 
 docker compose up -d
@@ -59,11 +63,17 @@ the process environment, in `docker inspect`, or in the image.
 
 `/irc` needs to talk to the Docker daemon. Mounting `/var/run/docker.sock` directly
 into the bot would give it root-equivalent access to the host, so Compose instead
-runs a socket proxy that only exposes container start/stop/restart:
+runs a proxy with an explicit per-endpoint allowlist — inspect, start, stop and
+restart on the single configured container, and nothing else:
 
 ```bash
+export DOCKER_GID=$(getent group docker | cut -d: -f3)
+export IRC_RELAY_ID=0b275a53fcec   # must match irc_relay_id in config.json
 docker compose --profile irc up -d
 ```
+
+Requests the bot does not need — including `containers/create` and `containers/{id}/exec`,
+which are the usual paths from socket access to host root — are rejected by the proxy.
 
 Without that profile the infrastructure cog cannot reach a daemon and disables
 itself with a log warning; every other command is unaffected.
@@ -97,14 +107,16 @@ Log files are the only Discord data the bot writes outside Discord, so they are:
 - **Rotated daily and deleted after `log_retention_days`** (default 14). The config
   loader refuses any value above 30 to stay inside Discord's retention policy.
 
-Read a log back with:
+The bot also writes a plaintext copy to stdout, which the container runtime persists
+outside the encrypted volume. That sink runs through a redacting formatter: every
+Discord ID is replaced with a per-process HMAC pseudonym, and no usernames are ever
+logged, so container logs stay useful for debugging without carrying personal data.
+
+Read the encrypted log back with:
 
 ```bash
 docker compose exec bot python -m verification_bot.logtools decrypt /app/logs/verification.log
 ```
-
-Container stdout carries a plaintext copy for live debugging; Compose caps it at
-2 × 5 MB so it ages out quickly.
 
 ### Bot permissions
 
@@ -132,6 +144,7 @@ Notable keys:
 | `emergency_request_deny_threshold` | Denials needed to reject a request |
 | `emergency_role_reminder` / `emergency_role_timeout` | Reminder interval, and how many reminders before the request expires |
 | `emergency_top_role_bypass_id` | Roles that may ping without approval |
+| `nitro_role` | Hidden Nitro Booster role granted on boost; omit to disable |
 | `irc_relay_id` | Docker container for `/irc`; omit to disable the cog |
 | `log_retention_days` | Days of logs kept on disk (1–30, default 14) |
 

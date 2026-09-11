@@ -77,11 +77,21 @@ def _as_int_tuple(data: Mapping[str, Any], key: str) -> tuple[int, ...]:
         raise ConfigError(f"Configuration key {key!r} must only contain integer IDs") from exc
 
 
+def _as_int_with_default(data: Mapping[str, Any], key: str, default: int) -> int:
+    return _as_int(data, key) if key in data else default
+
+
 def _as_optional_str(data: Mapping[str, Any], key: str) -> str | None:
     value = data.get(key)
     if value in (None, ""):
         return None
     return str(value)
+
+
+def _as_str(data: Mapping[str, Any], key: str, default: str) -> str:
+    """Return a string value, treating JSON null and non-strings as absent."""
+    value = data.get(key)
+    return value if isinstance(value, str) else default
 
 
 @dataclass(frozen=True)
@@ -115,6 +125,7 @@ class BotConfig:
     emergency_top_role_bypass_ids: tuple[int, ...]
 
     irc_relay_id: str | None = None
+    nitro_role_id: int | None = None
     log_directory: Path = field(default=Path("logs"))
     log_retention_days: int = 14
     log_encryption_key: str | None = field(default=None, repr=False)
@@ -150,9 +161,10 @@ class BotConfig:
 def config_from_mapping(data: Mapping[str, Any]) -> BotConfig:
     """Build a :class:`BotConfig` from an already-parsed mapping."""
     config = BotConfig(
-        token=secret_from_env(TOKEN_ENV_VAR) or str(data.get("token", "")),
+        # A JSON null or non-string must not become the literal "None".
+        token=secret_from_env(TOKEN_ENV_VAR) or _as_str(data, "token", ""),
         home_server_id=_as_int(data, "homeserver_id"),
-        status=str(data.get("status", "/verify to get access")),
+        status=_as_str(data, "status", "/verify to get access"),
         verified_role_id=_as_int(data, "verified_role"),
         verification_requirement_join=_as_int(data, "verification_requirement_join"),
         verification_requirement_message=_as_int(data, "verification_requirement_message"),
@@ -171,8 +183,9 @@ def config_from_mapping(data: Mapping[str, Any]) -> BotConfig:
         emergency_role_timeout=_as_int(data, "emergency_role_timeout"),
         emergency_top_role_bypass_ids=_as_int_tuple(data, "emergency_top_role_bypass_id"),
         irc_relay_id=_as_optional_str(data, "irc_relay_id"),
-        log_directory=Path(str(data.get("log_directory", "logs"))),
-        log_retention_days=int(data.get("log_retention_days", 14)),
+        nitro_role_id=_as_optional_int(data, "nitro_role"),
+        log_directory=Path(_as_str(data, "log_directory", "logs")),
+        log_retention_days=_as_int_with_default(data, "log_retention_days", 14),
         log_encryption_key=secret_from_env(LOG_KEY_ENV_VAR),
     )
     config.validate()

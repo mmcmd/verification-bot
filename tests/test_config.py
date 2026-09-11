@@ -70,6 +70,16 @@ def test_optional_irc_relay_id(monkeypatch):
     assert config_from_mapping({**VALID, "irc_relay_id": ""}).irc_relay_id is None
 
 
+def test_nitro_role_is_optional(monkeypatch):
+    monkeypatch.delenv("DISCORD_TOKEN", raising=False)
+    assert config_from_mapping(VALID).nitro_role_id is None
+
+
+def test_nitro_role_is_coerced_to_int(monkeypatch):
+    monkeypatch.delenv("DISCORD_TOKEN", raising=False)
+    assert config_from_mapping({**VALID, "nitro_role": "16"}).nitro_role_id == 16
+
+
 def test_reminder_interval_floor(monkeypatch):
     monkeypatch.delenv("DISCORD_TOKEN", raising=False)
     with pytest.raises(ConfigError, match="emergency_role_reminder"):
@@ -84,6 +94,23 @@ def test_log_retention_over_30_days_is_rejected(monkeypatch):
     monkeypatch.delenv("DISCORD_TOKEN", raising=False)
     with pytest.raises(ConfigError, match="log_retention_days"):
         config_from_mapping({**VALID, "log_retention_days": "31"})
+
+
+def test_non_numeric_log_retention_raises_config_error(monkeypatch):
+    monkeypatch.delenv("DISCORD_TOKEN", raising=False)
+    with pytest.raises(ConfigError, match="log_retention_days"):
+        config_from_mapping({**VALID, "log_retention_days": "abc"})
+
+
+def test_null_token_is_treated_as_missing(monkeypatch):
+    monkeypatch.delenv("DISCORD_TOKEN", raising=False)
+    with pytest.raises(ConfigError, match="token"):
+        config_from_mapping({**VALID, "token": None})
+
+
+def test_null_status_falls_back_to_the_default(monkeypatch):
+    monkeypatch.delenv("DISCORD_TOKEN", raising=False)
+    assert config_from_mapping({**VALID, "status": None}).status == "/verify to get access"
 
 
 def test_secrets_can_come_from_a_file(monkeypatch, tmp_path):

@@ -37,16 +37,26 @@ class Community(commands.Cog):
             await self._on_unboost(after)
 
     async def _on_boost(self, member: discord.Member) -> None:
-        log.info("%s (%s) boosted the server", member, member.id)
+        log.info("Member %s boosted the server", member.id)
+
+        role = self._nitro_role(member.guild)
+        if role is not None and role not in member.roles:
+            try:
+                await member.add_roles(
+                    role, reason="User boosted the server; granting the Nitro Booster role."
+                )
+            except discord.HTTPException:
+                log.exception("Failed to grant the Nitro Booster role to %s", member.id)
+
         try:
             await member.send(self.bot.message("boost.thank_you"))
         except discord.Forbidden:
-            log.info("Could not DM %s (%s) a boost thank-you: DMs closed", member, member.id)
+            log.info("Could not DM member %s a boost thank-you: DMs closed", member.id)
         except discord.HTTPException:
             log.exception("Failed to DM %s a boost thank-you", member.id)
 
     async def _on_unboost(self, member: discord.Member) -> None:
-        log.info("%s (%s) unboosted the server", member, member.id)
+        log.info("Member %s unboosted the server", member.id)
 
         channel = self.bot.unboost_channel
         if channel is not None:
@@ -62,17 +72,30 @@ class Community(commands.Cog):
             except discord.HTTPException:
                 log.exception("Failed to announce the unboost of %s", member.id)
 
-        colored = {role.id for role in member.roles} & set(self.bot.config.colored_role_ids)
-        if not colored:
+        revocable = set(self.bot.config.colored_role_ids)
+        nitro_role = self._nitro_role(member.guild)
+        if nitro_role is not None:
+            revocable.add(nitro_role.id)
+
+        # Members may have self-removed the booster role, so only strip what they hold.
+        roles = [role for role in member.roles if role.id in revocable]
+        if not roles:
             return
-        roles = [member.guild.get_role(role_id) for role_id in colored]
         try:
             await member.remove_roles(
-                *[role for role in roles if role is not None],
-                reason="User unboosted the server; colored roles removed.",
+                *roles, reason="User unboosted the server; booster roles removed."
             )
         except discord.HTTPException:
-            log.exception("Failed to remove colored roles from %s", member.id)
+            log.exception("Failed to remove booster roles from %s", member.id)
+
+    def _nitro_role(self, guild: discord.Guild) -> discord.Role | None:
+        role_id = self.bot.config.nitro_role_id
+        if role_id is None:
+            return None
+        role = guild.get_role(role_id)
+        if role is None:
+            log.error("Nitro Booster role %s is missing from the guild", role_id)
+        return role
 
     # -- commands ----------------------------------------------------------
 

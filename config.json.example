@@ -16,6 +16,7 @@
     "roles_channel_id": "ID of the self-assignable roles channel linked in the verification message",
 
     "colored_roles": ["452201509816369162", "623681022717984779"],
+    "nitro_role": "ID of the hidden Nitro Booster role granted on boost; omit to disable",
 
     "ontopic_category_id": "ID of the category where /emergency may be used",
     "emergency_role_id": "ID of the role that gets pinged for emergencies",

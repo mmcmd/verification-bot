@@ -97,8 +97,7 @@ class Infrastructure(commands.Cog):
         await respond(interaction, embed=embed)
         await self.bot.audit(embed)
         log.info(
-            "%s (%s) ran the IRC relay action %r",
-            interaction.user,
+            "Member %s ran the IRC relay action %r",
             interaction.user.id,
             action.value,
         )

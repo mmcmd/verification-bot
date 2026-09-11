@@ -59,7 +59,7 @@ class Verification(commands.Cog):
             await respond(
                 interaction, self.bot.message("verification.already_verified"), ephemeral=True
             )
-            log.info("%s (%s) is already verified; request ignored", member, member.id)
+            log.info("Member %s is already verified; request ignored", member.id)
             return
 
         age_days = account_age_days(member)
@@ -84,8 +84,7 @@ class Verification(commands.Cog):
                 )
             )
             log.info(
-                "%s (%s) failed verification: account age %d days (< %d)",
-                member,
+                "Member %s failed verification: account age %d days (< %d)",
                 member.id,
                 age_days,
                 required,
@@ -120,7 +119,9 @@ class Verification(commands.Cog):
                 colour=SUCCESS,
             )
         )
-        log.info("%s (%s) verified via /verify; account age %d days", member, member.id, age_days)
+        log.info(
+            "Member %s verified via /verify; account age %d days", member.id, age_days
+        )
 
     # -- listeners ---------------------------------------------------------
 
@@ -161,7 +162,9 @@ class Verification(commands.Cog):
                 colour=SUCCESS,
             )
         )
-        log.info("%s (%s) auto-verified on join; account age %d days", member, member.id, age_days)
+        log.info(
+            "Member %s auto-verified on join; account age %d days", member.id, age_days
+        )
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
