@@ -1,0 +1,101 @@
+services:
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: verification-bot:latest
+    container_name: verification-bot
+    restart: unless-stopped
+    init: false # tini is the image entrypoint
+
+    secrets:
+      - discord_token
+      - log_encryption_key
+
+    environment:
+      DISCORD_TOKEN_FILE: /run/secrets/discord_token
+      LOG_ENCRYPTION_KEY_FILE: /run/secrets/log_encryption_key
+      TZ: UTC
+      # Ignored unless the 'irc' profile is running; the cog skips itself if the
+      # proxy is unreachable.
+      DOCKER_HOST: tcp://docker-socket-proxy:2375
+
+    networks:
+      - default
+      - irc-control
+
+    volumes:
+      - ./config.json:/app/config.json:ro
+      - ./resources/messages.json:/app/resources/messages.json:ro
+      - bot-logs:/app/logs
+
+    # Hardening: the bot only ever writes to /app/logs and /tmp.
+    read_only: true
+    tmpfs:
+      - /tmp:size=8m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+    # Steady-state usage is roughly 90-130 MB RSS on a 25k member guild.
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.50"
+        reservations:
+          memory: 96M
+
+    # stdout carries a pseudonymised copy of the log (Discord IDs are redacted by the
+    # console formatter); the identifiable copy exists only in the encrypted volume.
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # Optional: only needed for the /irc command.
+  # Exposing the raw Docker socket to a container is equivalent to giving it root on
+  # the host, so the bot talks to a proxy with an explicit per-endpoint allowlist.
+  # Only "inspect/start/stop/restart that one container" is reachable; everything
+  # else, including container create and exec, is rejected by the proxy.
+  docker-socket-proxy:
+    image: wollomatic/socket-proxy:1.13.1
+    container_name: verification-bot-socket-proxy
+    restart: unless-stopped
+    profiles: [irc]
+    # Needs the host's docker group to read the socket: DOCKER_GID=$(getent group docker | cut -d: -f3)
+    user: "65534:${DOCKER_GID:-999}"
+    command:
+      - "-loglevel=info"
+      - "-listenip=0.0.0.0"
+      - "-allowfrom=verification-bot"
+      - "-allowGET=/v1\\.\\d+/containers/${IRC_RELAY_ID:-[0-9a-zA-Z_.-]+}/json"
+      - "-allowPOST=/v1\\.\\d+/containers/${IRC_RELAY_ID:-[0-9a-zA-Z_.-]+}/(start|stop|restart)"
+      - "-watchdoginterval=3600"
+      - "-stoponwatchdog"
+      - "-shutdowngracetime=5"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    mem_limit: 64M
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - irc-control
+
+secrets:
+  discord_token:
+    file: ./secrets/discord_token
+  log_encryption_key:
+    file: ./secrets/log_encryption_key
+
+volumes:
+  bot-logs:
+
+networks:
+  irc-control:
+    internal: true

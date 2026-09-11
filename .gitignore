@@ -102,6 +102,16 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+.ruff_cache/
 
-# Config file
+# Config file (secrets) — the example and message templates stay tracked
 *.json
+!config.json.example
+!resources/messages.json
+
+# Runtime state
+logs/
+data/
+secrets/*
+!secrets/README.txt
+*.log
