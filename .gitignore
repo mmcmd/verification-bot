@@ -112,6 +112,4 @@ venv.bak/
 # Runtime state
 logs/
 data/
-secrets/*
-!secrets/README.txt
 *.log

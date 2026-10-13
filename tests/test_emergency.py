@@ -1,6 +1,13 @@
 import pytest
 
-from verification_bot.emergency import EmergencyRequest, EmergencyStatus, Vote, VoteOutcome
+from verification_bot.emergency import (
+    EmergencyRequest,
+    EmergencyStatus,
+    Vote,
+    VoteOutcome,
+    clock_schedule,
+    total_lifetime_seconds,
+)
 
 
 @pytest.fixture
@@ -77,3 +84,13 @@ def test_mixed_votes_do_not_resolve_early(request_):
     request_.cast(3, Vote.DENY)
     assert request_.is_pending
     assert (request_.approvals, request_.denials) == (1, 1)
+
+
+def test_clock_schedule_is_reminders_then_one_timeout():
+    assert clock_schedule(5) == [True, True, True, True, True, False]
+    assert clock_schedule(1) == [True, False]
+    assert clock_schedule(0) == [False]
+
+
+def test_default_lifetime_is_eighteen_minutes():
+    assert total_lifetime_seconds(180, 5) == 1080

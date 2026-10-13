@@ -30,6 +30,23 @@ class EmergencyStatus(enum.Enum):
     TIMED_OUT = "timed_out"
 
 
+def clock_schedule(reminder_count: int) -> list[bool]:
+    """The waits a request goes through, one entry per interval.
+
+    ``True`` means "send a reminder after this wait", the final ``False`` means
+    "time the request out after this wait". A request therefore lives for
+    ``reminder_count + 1`` intervals: the old bot behaved the same way (a
+    reminder after each interval, then the timeout one interval after the last
+    reminder).
+    """
+    return [True] * max(reminder_count, 0) + [False]
+
+
+def total_lifetime_seconds(interval_seconds: int, reminder_count: int) -> int:
+    """How long a request stays open if nobody settles it."""
+    return interval_seconds * len(clock_schedule(reminder_count))
+
+
 @dataclass
 class EmergencyRequest:
     """Tracks a single pending emergency request and its votes."""

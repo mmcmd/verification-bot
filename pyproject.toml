@@ -7,18 +7,16 @@ name = "verification-bot"
 version = "2.0.0"
 description = "Account-age verification and moderation bot for the /r/sysadmin Discord server"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.9"
 license = { file = "LICENSE" }
 dependencies = ["discord.py>=2.4,<3"]
 
 [project.optional-dependencies]
-encryption = ["cryptography>=42.0"]
 docker = ["docker>=7.0"]
-dev = ["pytest>=8.0", "pytest-asyncio>=0.23", "ruff>=0.5", "cryptography>=42.0"]
+dev = ["pytest>=8.0", "pytest-asyncio>=0.23", "ruff>=0.5", "docker>=7.0"]
 
 [project.scripts]
 verification-bot = "verification_bot.__main__:main"
-verification-bot-logs = "verification_bot.logtools:main"
 
 [tool.setuptools.packages.find]
 include = ["verification_bot*"]
@@ -29,7 +27,7 @@ asyncio_mode = "auto"
 
 [tool.ruff]
 line-length = 100
-target-version = "py310"
+target-version = "py39"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "ASYNC", "RUF"]

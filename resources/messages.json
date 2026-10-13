@@ -1,15 +1,26 @@
 {
+    "help": {
+        "intro": "Here is every command the bot has, grouped by who it is meant for. Anyone can see this list, but each command checks your permissions when you run it. Some commands only work inside the server, not in a direct message.",
+        "footer": "Run /privacy to see what data the bot handles."
+    },
+    "privacy": {
+        "summary": "**What the bot does with your data**\n- To decide whether you can be verified, the bot checks how old your Discord account is.\n- The bot receives direct messages sent to it, but it does not read, log or store their text.\n- The reason you give to `/emergency` is posted publicly in the channel and in the moderators' private log channel.\n- Actions such as verification are recorded in the moderators' private log channel inside Discord: your user ID, name, avatar and what happened.\n- Outside Discord the bot keeps no data about members. Its log only contains scrambled IDs, and its settings file only contains server settings.\n- Nothing is sold, shared or used to train AI.",
+        "deletion": "**Want something deleted?** Contact {contact}. Requests are handled within 30 days.",
+        "policy": "Read the full privacy policy: {url}"
+    },
     "verification": {
-        "dm_hint": "Hi! To get access to **/r/sysadmin**, run the **/verify** slash command. You can run it right here in this DM by typing `/verify`, or in any channel of the server.\n\nIf that does not work, contact <@{moderator_mail_id}> (Moderator Mail, at the top of the member list) and a moderator will help you out.",
+        "dm_hint": "Hi! To get access to **/r/sysadmin**, run the **/verify** slash command. You can run it right here in this DM by typing `/verify`, or in any channel of the server.\n\nIf that does not work, contact {contact} and a moderator will help you out.",
         "not_a_member": "You need to join the /r/sysadmin server before I can verify you.",
-        "already_verified": "You already have access to the server, so there is nothing to verify. Contact <@{moderator_mail_id}> (Moderator Mail, at the top of the member list) if something looks wrong.",
-        "too_young": "Sorry, your Discord account must be at least **{required_days} days** old to be verified this way. Your account is **{account_age_days} days** old.\n\nYou can either verify with a phone number in the server, or contact <@{moderator_mail_id}> (Moderator Mail, at the top of the member list) for manual verification.",
-        "success": "You have been verified. Please remember to read <#{rules_channel_id}>, and feel free to assign yourself roles in <#{roles_channel_id}>.\n\nIf you ever have an issue, do not hesitate to message <@{moderator_mail_id}> (Moderator Mail, at the top of the member list).",
-        "role_missing": "Verification is temporarily unavailable. Please contact <@{moderator_mail_id}> (Moderator Mail, at the top of the member list).",
-        "forbidden": "I could not assign your role because of a permissions problem. Please contact <@{moderator_mail_id}> (Moderator Mail, at the top of the member list)."
+        "already_verified": "You already have access to the server, so there is nothing to verify. Contact {contact} if something looks wrong.",
+        "too_young": "Sorry, your Discord account must be at least **{required_days} days** old to be verified this way. Your account is **{account_age_days} days** old.\n\nYou can either verify with a phone number in the server, or contact {contact} for manual verification.",
+        "success": "You have been verified. Please remember to read {rules_channel}, and feel free to assign yourself roles in {roles_channel}.\n\nIf you ever have an issue, do not hesitate to message {contact}.",
+        "not_configured": "Verification is not set up yet: an administrator has to run `/config` and choose the verified role. Please contact {contact}.",
+        "role_missing": "Verification is temporarily unavailable. Please contact {contact}.",
+        "forbidden": "I could not assign your role because of a permissions problem. Please contact {contact}."
     },
     "boost": {
-        "thank_you": "Thank you for boosting /r/sysadmin! As a booster you have access to a new channel (<#585867795942604800>), as well as a variety of colored roles. Check <#{roles_channel_id}> for more info on getting a colored role.\n\nIf you have any questions, feel free to message Moderator Mail (at the top of the member list)."
+        "thank_you": "Thank you for boosting /r/sysadmin! As a booster you have access to a new channel ({booster_channel}), as well as a variety of colored roles. Check {roles_channel} for more info on getting a colored role.\n\nIf you have any questions, feel free to message {contact}.",
+        "unavailable": "The booster list is temporarily unavailable. The bot is running in a reduced mode until Discord approves its access to the member list."
     },
     "emergency": {
         "prompt": "An emergency has been called by {caller}.\n\n**Reason:** {reason}\n\nVerification is needed from at least **{approval_threshold}** other members of sudo level 1 or higher to confirm that this is indeed an emergency. Use the buttons below to approve or deny.\n\n**{caller}, make sure all the details about the incident are clear: what is broken, what you have already tried, and any screenshots or logs that help.**\n\n__The emergency ping is reserved for business production issues that are extremely time sensitive, not for homework or any other non-emergency issue.__\n\nApproved: {approvals}/{approval_threshold}  \u2022  Denied: {denials}/{deny_threshold}",
@@ -20,6 +31,17 @@
         "no_active": "There is currently no active emergency request.",
         "already_active": "There is already an active emergency request. Ask a moderator to run `/clearemergency`, or approve/deny the existing one.\n\nLink to the current request: {link}",
         "reminder": "There is currently an emergency request awaiting approval. Link: {link} \u2014 please approve or deny it if you can.",
-        "bypass": "An emergency is being called by {caller}.\n\n**Reason:** {reason}\n\n{role}\n\n**{caller}, make sure to provide all necessary info: screenshots if possible, things you have already tried, and any other details people might need to know.**"
+        "bypass": "An emergency is being called by {caller}.\n\n**Reason:** {reason}\n\n{role}\n\n**{caller}, make sure to provide all necessary info: screenshots if possible, things you have already tried, and any other details people might need to know.**",
+        "closed": "An emergency was requested by {caller}.\n\n**Reason:** {reason}\n\nThis request is closed: **{outcome}**.\n\nApproved: {approvals}/{approval_threshold}  •  Denied: {denials}/{deny_threshold}",
+        "approved_no_role": "The emergency called by {caller} has been approved, but the emergency role no longer exists, so nobody could be pinged. Please contact {contact}.\n\n**Reason:** {reason}\n\nLink to the request: {link}",
+        "requested": "Your emergency request has been posted: {link}\n\nIt needs {approval_threshold} approvals before the emergency role is pinged. While you wait, post the details in the channel: what is broken, what you have already tried, and any screenshots or logs.",
+        "bypass_sent": "Your emergency ping has been sent: {link}",
+        "role_missing": "The emergency role no longer exists, so nobody can be pinged. An administrator has to choose a new one with `/config`. Please let {contact} know.",
+        "send_failed": "I could not post the emergency request in this channel, so nothing was sent. Please let {contact} know.",
+        "not_a_voter": "Only members of sudo level 1 or higher can vote on emergency requests.",
+        "self_vote": "You cannot vote on your own emergency request.",
+        "vote_recorded": "Your vote to **{vote}** has been recorded.",
+        "vote_duplicate": "You have already voted to {vote} this request.",
+        "vote_closed": "This emergency request has already been resolved."
     }
 }

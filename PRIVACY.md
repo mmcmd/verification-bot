@@ -1,94 +1,95 @@
-# Privacy Policy — /r/sysadmin Verification Bot
+# Privacy Policy: /r/sysadmin verification bot
 
-_Last updated: 2026-09-10_
+**Effective date: 12 October 2026**
 
-This policy describes what data the /r/sysadmin Verification Bot ("the bot") receives from
-Discord, what it does with it, and how long it is kept. The bot is operated by the moderator
-team of the /r/sysadmin Discord server. Its source code is public at
-<https://github.com/mmcmd/verification-bot>.
+This bot gives new members access to the /r/sysadmin Discord server, handles
+emergency requests and keeps track of server boosts. It is run by the owner of
+the /r/sysadmin Discord server, based in Canada, and works in that one server
+only.
 
-## 1. What the bot receives
+## What the bot looks at
 
-The bot connects to the Discord gateway with the following intents:
+- **Your account's creation date**, to work out how many days old your account
+  is. That decides whether you are verified, when you run `/verify` or
+  automatically when you join.
+- **Your roles in the server**, to see whether you already have access and
+  whether you may use a command or vote on an emergency request.
+- **Whether you are boosting the server**, and since when.
+- **Your user ID, name and avatar**, which appear in the records below.
+- **The reason you type into `/emergency`.**
+- **The member list.** While Discord grants the bot the Server Members
+  permission, Discord sends it the server's member list (IDs, names, avatars,
+  roles, join and boost dates) and tells it when someone joins or a member's
+  details change. The bot uses this for three things: verifying people as
+  they join, noticing when someone starts or stops boosting, and the
+  `/boosters` list.
 
-| Intent | Enabled | Purpose |
-| --- | --- | --- |
-| Guilds | Yes | Resolve channels, roles and categories. |
-| Guild Members (privileged) | Yes | Join events, role assignment, Nitro boost state. |
-| Direct Messages | Yes | Reply to a DM with instructions to run `/verify`. |
-| Message Content (privileged) | **No** | Not requested. The bot never reads message text. |
-| Presence (privileged) | **No** | Not requested. The bot never reads status or activity. |
+The bot does not receive messages posted in the server's channels, and does not
+ask Discord for anyone's online status or activity.
 
-From those intents the bot processes:
+**Direct messages.** If you send the bot a direct message, Discord delivers it
+to the bot, which replies with a note telling you to use `/verify` (at most
+once every 10 minutes). The bot does not read, log or store what you wrote.
 
-- Your Discord user ID, username and avatar URL.
-- Your account creation date, which is derived from your user ID (Discord snowflake).
-- Your roles in the /r/sysadmin server and your server join date.
-- Your Nitro boost start date for the /r/sysadmin server.
-- The text you type into a slash command option (for example the `reason` field of
-  `/emergency`), which you supply deliberately and which is posted publicly in the channel
-  where you used the command.
+## What is recorded inside Discord
 
-The bot does **not** read message content, attachments, presence, status, activity, voice
-state, or any data from servers other than /r/sysadmin.
+- **The moderators' log channel**, a private channel that the server's
+  moderators can read. The bot posts an entry when you are verified or refused
+  (with your account's age in days), when you open or vote on an emergency
+  request, when a moderator or administrator acts through the bot, and when
+  something goes wrong that a moderator has to fix. An entry shows your user
+  ID, name and avatar and what happened.
+- **Emergency requests are public.** The reason you give is posted with your
+  mention in the channel where you ran `/emergency`, and copied to the
+  moderators' log channel.
+- **Boosts.** `/boosters` shows, in the channel where it is run, who is
+  boosting and since when. When you stop boosting, a notice with your name,
+  user ID and avatar is posted in a channel chosen by the administrators.
+- **Role changes.** When the bot gives or removes a role, Discord's own audit
+  log for the server records it with a short reason, such as your account's
+  age in days.
+- Some public replies show "Requested by" with your name and avatar.
 
-## 2. What the bot stores
+## What is kept outside Discord
 
-| Data | Where | Retention |
-| --- | --- | --- |
-| Audit log entries (user ID, username, avatar URL, action taken, timestamp) | A private moderator channel inside Discord | Until moderators delete the channel history |
-| Application log file on the host (same fields as above) | `logs/verification.log` on the moderators' server, **encrypted at rest** | Rotated daily and deleted after **14 days**; the software refuses any retention setting above 30 days |
+The bot keeps no member data outside Discord. It writes two things on the
+computer it runs on:
 
-Emergency requests and their votes are held in memory only and are discarded when the request
-is resolved or the bot restarts.
+- **A service log.** Every Discord ID in it is scrambled: before a line is
+  written, each ID is replaced by a random-looking code that changes every time
+  the bot restarts and cannot be turned back into the ID by someone reading the
+  log. The bot does not write names or emergency reasons to it.
+- **A settings file**, holding server settings only: role IDs, channel IDs, the
+  ID of the Moderator Mail account, a few numbers such as the age limits, and
+  the bot's status text.
 
-No message content is stored anywhere. No data is sold, shared with third parties, used for
-advertising, or used to train machine learning or AI models.
+The member list, a pending emergency request (who asked, the reason, who voted)
+and short timers, such as when the bot last replied to your direct message,
+live in the bot's memory only. They are never written to a file and are gone
+when the bot stops.
 
-## 3. Encryption at rest
+## Sharing
 
-The log file is encrypted record-by-record with Fernet (AES-128-CBC with HMAC-SHA256
-authentication) before it touches the disk. In our deployment the key is supplied as a
-mounted Docker secret; the software also accepts it from the `LOG_ENCRYPTION_KEY`
-environment variable for non-containerised installations. The key is never stored in the
-container image or the source repository. Anyone who obtains the log volume without the key
-gets only ciphertext. The host volume additionally sits on an encrypted filesystem.
+Nothing is sold, shared with third parties, or used to train AI.
 
-The application also emits a plaintext operational log to standard output, which the
-container runtime stores outside the encrypted volume. That output is passed through a
-redacting formatter that replaces every Discord ID with a per-process HMAC pseudonym, and no
-usernames are written to logs at all, so this sink contains no data that identifies a user.
+## Deleting your data
 
-## 4. Where the data lives
+Send a message to **Moderator Mail** in the /r/sysadmin server (the account at
+the top of the member list) and say what you want removed. Within 30 days we
+will delete what the bot recorded about you, including entries in the
+moderators' log channel, unless an entry is needed for an open moderation
+matter. Discord's own audit log is kept by Discord and we cannot edit it.
 
-The bot runs on a private server controlled by the /r/sysadmin moderator team. Log files are
-the only data stored outside Discord. Access is restricted to
-moderators who administer the host.
+## Children
 
-## 5. Your choices and rights
+The bot is not meant for anyone under 13, and we do not knowingly handle data
+about anyone under 13.
 
-- Using the bot is optional. `/verify` and every other command are opt-in actions you take
-  deliberately; the bot never acts on your messages.
-- You may request a copy or the deletion of any data the bot holds about you by contacting the
-  moderator team through **Moderator Mail** in the /r/sysadmin server (top of the member
-  list), or by opening an issue at <https://github.com/mmcmd/verification-bot/issues>.
-- Deletion requests are acknowledged within 7 days and completed within 30 days. In practice
-  all off-platform data ages out automatically within 14 days regardless.
-- Leaving the server also causes your data to age out of the log rotation.
+## Changes to this policy
 
-## 6. Children
+If this policy changes, the new text replaces this page and the effective date
+at the top is updated.
 
-The bot is reachable only from within Discord — in the /r/sysadmin server, and in direct
-messages with the bot for the `/verify` command. Discord requires all users to be at least
-13 years old (or older where local law requires). The bot does not knowingly process data
-belonging to anyone below that age.
+## Contact
 
-## 7. Changes
-
-Material changes to this policy will be announced in the /r/sysadmin server and committed to
-the public repository, so the full history of this document is auditable.
-
-## 8. Contact
-
-Moderator Mail in the /r/sysadmin Discord server, or
-<https://github.com/mmcmd/verification-bot/issues>.
+Moderator Mail in the /r/sysadmin Discord server.

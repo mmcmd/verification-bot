@@ -26,6 +26,12 @@ class Community(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_update(self, before: discord.Member, after: discord.Member) -> None:
+        """Spot boosts and unboosts.
+
+        Discord only sends member updates with the Server Members intent, and
+        discord.py only passes them on for members it has loaded, so this needs
+        the full member list and never runs in reduced mode.
+        """
         if after.guild.id != self.bot.config.home_server_id:
             return
         if before.premium_since == after.premium_since:
@@ -47,6 +53,13 @@ class Community(commands.Cog):
                 )
             except discord.HTTPException:
                 log.exception("Failed to grant the Nitro Booster role to %s", member.id)
+                await self.bot.report_failure(
+                    "Could not assign the booster role",
+                    f"{member.mention} boosted the server, but {role.mention} could not be "
+                    "assigned. Check that the bot has **Manage Roles** and that its own role "
+                    "sits above the booster role, then give them the role by hand.",
+                    member=member,
+                )
 
         try:
             await member.send(self.bot.message("boost.thank_you"))
@@ -58,7 +71,7 @@ class Community(commands.Cog):
     async def _on_unboost(self, member: discord.Member) -> None:
         log.info("Member %s unboosted the server", member.id)
 
-        channel = self.bot.unboost_channel
+        channel = self.bot.setting_channel("unboost_channel")
         if channel is not None:
             try:
                 await channel.send(
@@ -72,7 +85,7 @@ class Community(commands.Cog):
             except discord.HTTPException:
                 log.exception("Failed to announce the unboost of %s", member.id)
 
-        revocable = set(self.bot.config.colored_role_ids)
+        revocable = set(self.bot.settings.get("colour_roles"))
         nitro_role = self._nitro_role(member.guild)
         if nitro_role is not None:
             revocable.add(nitro_role.id)
@@ -87,9 +100,15 @@ class Community(commands.Cog):
             )
         except discord.HTTPException:
             log.exception("Failed to remove booster roles from %s", member.id)
+            await self.bot.report_failure(
+                "Could not remove booster roles",
+                f"{member.mention} stopped boosting, but these roles could not be removed: "
+                f"{', '.join(role.mention for role in roles)}. Please remove them by hand.",
+                member=member,
+            )
 
     def _nitro_role(self, guild: discord.Guild) -> discord.Role | None:
-        role_id = self.bot.config.nitro_role_id
+        role_id = self.bot.settings.get("booster_role")
         if role_id is None:
             return None
         role = guild.get_role(role_id)
@@ -105,6 +124,11 @@ class Community(commands.Cog):
     @app_commands.guild_only()
     @app_commands.checks.cooldown(1, 15.0, key=lambda interaction: interaction.channel_id)
     async def boosters(self, interaction: discord.Interaction) -> None:
+        if self.bot.reduced_mode:
+            # The list is built from the loaded member list, which reduced mode lacks.
+            await respond(interaction, self.bot.message("boost.unavailable"), ephemeral=True)
+            return
+
         guild = self.bot.home_guild
         if guild is None:
             await respond(interaction, "The server is not available right now.", ephemeral=True)
