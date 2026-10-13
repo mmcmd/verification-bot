@@ -1,0 +1,44 @@
+# systemd service for the /r/sysadmin verification bot.
+#
+# Install:
+#   sudo cp deploy/verificationbot.service /etc/systemd/system/verificationbot.service
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now verificationbot
+#
+# Watch the log:
+#   journalctl -u verificationbot -f
+#
+# Why the restart rules are strict: Discord resets a bot's token after 1000
+# connections in 24 hours. The previous service restarted every second without
+# limit and used that up. This one allows at most 5 starts per hour, and none at
+# all after a problem that restarting cannot fix.
+
+[Unit]
+Description=Verification bot for the /r/sysadmin Discord server
+After=network-online.target
+Wants=network-online.target
+# At most 5 starts in any hour. After that systemd stops trying; start it again
+# by hand with "sudo systemctl reset-failed verificationbot" and then
+# "sudo systemctl start verificationbot".
+StartLimitIntervalSec=3600
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=massimo
+WorkingDirectory=/home/massimo/verification-bot
+ExecStart=/home/massimo/verification-bot/.venv/bin/python /home/massimo/verification-bot/verif.py
+# Send log lines to the service log straight away instead of in batches.
+Environment=PYTHONUNBUFFERED=1
+
+# Restart only after a crash, and wait 30 seconds first.
+Restart=on-failure
+RestartSec=30
+# Never restart after these exit codes:
+#   2 = config.json or the settings file is missing or broken
+#   3 = Discord rejected the bot token
+#   4 = Discord refused the connection even in reduced mode
+RestartPreventExitStatus=2 3 4
+
+[Install]
+WantedBy=multi-user.target
